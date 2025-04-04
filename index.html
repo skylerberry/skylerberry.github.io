@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position Size Calculator</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="calculator-container">
+        <h2 class="calculator-title">Position Size & Risk Calculator</h2>
+        
+        <div class="grid">
+            <div>
+                <h2 class="section-title">Account Information</h2>
+                
+                <div class="input-group">
+                    <label class="input-label">Account Size ($)</label>
+                    <div class="input-container">
+                        <span class="input-prefix">$</span>
+                        <input type="text" id="accountSize" class="text-input" placeholder="Enter account size (e.g. 10,000)">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Risk per Trade (%)</label>
+                    <div class="risk-buttons">
+                        <button class="risk-button" data-value="0.25">0.25%</button>
+                        <button class="risk-button" data-value="0.5">0.5%</button>
+                        <button class="risk-button" data-value="0.75">0.75%</button>
+                        <button class="risk-button active" data-value="1">1%</button>
+                        <button class="risk-button" data-value="1.5">1.5%</button>
+                        <button class="risk-button" data-value="2">2%</button>
+                        <button class="risk-button" data-value="3">3%</button>
+                    </div>
+                    <div class="input-container">
+                        <input type="number" id="riskPercentage" class="number-input number-input-pct" value="1" min="0" max="100" step="0.05">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="section-title">Trade Details</h2>
+                
+                <div class="input-group">
+                    <label class="input-label">Entry Price ($)</label>
+                    <div class="input-container">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="entryPrice" class="number-input" placeholder="Enter entry price" min="0.01" step="0.01">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Stop Loss Price ($)</label>
+                    <div class="input-container">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="stopLossPrice" class="number-input" placeholder="Enter stop loss price" min="0.01" step="0.01">
+                    </div>
+                    <div id="stopLossError" class="error-text hidden"></div>
+                    <div class="helper-text">Must be below entry price</div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Target Price ($) - Optional</label>
+                    <div class="input-container">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="targetPrice" class="number-input" placeholder="Enter target price (optional)" min="0" step="0.01">
+                    </div>
+                    <div id="targetPriceError" class="error-text hidden"></div>
+                    <div class="helper-text">Should be above entry price</div>
+                </div>
+            </div>
+        </div>
+        
+        <button id="clearButton" class="clear-button">Clear Calculator</button>
+        
+        <div class="results-section">
+            <h2 class="results-title">Results</h2>
+            
+            <div class="results-grid">
+                <!-- Shares to Purchase - Prominently displayed -->
+                <div class="result-card full-width">
+                    <div class="result-label">Shares to Purchase</div>
+                    <div id="sharesValue" class="result-value large">-</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">Position Size</div>
+                    <div id="positionSizeValue" class="result-value">-</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">Total Risk Amount</div>
+                    <div id="totalRiskValue" class="result-value">-</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">% of Account</div>
+                    <div id="percentOfAccountValue" class="result-value">-</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">R Multiple</div>
+                    <div id="rMultipleValue" class="result-value">- R</div>
+                </div>
+                
+                <!-- 5R Target Price - Visually distinctive -->
+                <div class="result-card full-width five-r-card">
+                    <div class="result-label">
+                        5R Target Price
+                        <span class="trim-tag">Trim Zone</span>
+                    </div>
+                    <div id="fiveRTargetValue" class="result-value trim">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <button id="infoButton" class="info-button">
+            <span id="infoIcon" class="info-icon">+</span>
+            How is position size calculated?
+        </button>
+        
+        <div id="infoContent" class="info-content hidden">
+            <p>Position size is calculated using the following formula:</p>
+            <ol>
+                <li>Calculate risk amount in dollars: Account Size × Risk Percentage</li>
+                <li>Calculate risk per share: Entry Price - Stop Loss Price</li>
+                <li>Calculate number of shares: Risk Amount ÷ Risk Per Share</li>
+                <li>Calculate position size: Number of Shares × Entry Price</li>
+            </ol>
+            <p>This approach ensures you never risk more than your specified percentage of account on any trade, regardless of the stock's price or volatility.</p>
+        </div>
+        
+        <div class="calculator-footer">
+            Made with <span class="heart">♥</span> by Skyler <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
