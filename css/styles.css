@@ -92,32 +92,40 @@ body {
     position: relative;
 }
 
+/* Update to the input-prefix class */
 .input-prefix {
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #6b7280;
+    pointer-events: none;
 }
 
+/* Update to the input-suffix class */
 .input-suffix {
     position: absolute;
-    right: 8px;
-    top: 8px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #6b7280;
+    pointer-events: none;
 }
 
+/* Update to the text-input and number-input */
 .text-input, .number-input {
     width: 100%;
-    padding: 6px 6px 6px 20px;
+    padding: 8px 8px 8px 24px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     font-size: 14px;
+    height: 36px; /* Fixed height for consistency */
 }
 
 .number-input-pct {
-    padding-right: 20px;
+    padding-right: 24px;
 }
 
 .helper-text {
