@@ -303,7 +303,12 @@ body {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
     border-top: 1px solid #e5e7eb;
-    line-height: 1; /* Normalize line height to match font size */
+    line-height: 1.4; /* Slightly increased for better readability */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 3px; /* Creates consistent spacing between elements */
 }
 
 .heart {
@@ -469,11 +474,12 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 }
 
 .heart-icon {
-    width: 12px; /* Reduced to match 12px font size better */
-    height: 12px;
-    vertical-align: text-bottom; /* Aligns closer to the text baseline */
-    display: inline-block;
-    pointer-events: none;
-    user-select: none;
-    margin: 0 2px; /* Adds a little spacing around the icon */
+    width: 14px; /* Slightly larger for better visibility */
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: -1px; /* Fine-tune the vertical alignment */
+    fill: #ff6b6b; /* Set the heart color */
 }
