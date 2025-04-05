@@ -63,18 +63,23 @@ function sanitizeInput(value) {
 // Validation and Error Handling
 function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
     const errors = [];
-    if (accountSize <= 0) errors.push({ element: elements.inputs.accountSize, message: 'Account size must be positive' });
-    if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
-    if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
-    if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
-    if (stopLossPrice >= entryPrice) errors.push({ 
-        element: elements.errors.stopLoss, 
-        message: 'Stop loss must be below entry price' 
-    });
-    if (targetPrice > 0 && targetPrice <= entryPrice) errors.push({ 
-        element: elements.errors.targetPrice, 
-        message: 'Target price should be above entry price' 
-    });
+    const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
+
+    // Only validate if there's actual data entered
+    if (hasData) {
+        if (accountSize <= 0) errors.push({ element: elements.inputs.accountSize, message: 'Account size must be positive' });
+        if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
+        if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
+        if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
+        if (stopLossPrice >= entryPrice && stopLossPrice > 0 && entryPrice > 0) errors.push({ 
+            element: elements.errors.stopLoss, 
+            message: 'Stop loss must be below entry price' 
+        });
+        if (targetPrice > 0 && targetPrice <= entryPrice && entryPrice > 0) errors.push({ 
+            element: elements.errors.targetPrice, 
+            message: 'Target price should be above entry price' 
+        });
+    }
     return errors;
 }
 
@@ -111,10 +116,15 @@ function calculatePosition() {
         targetPrice: parseFloat(elements.inputs.targetPrice.value) || 0
     };
 
-    if (Object.values(values).every(val => val === 0)) return;
-
     const errors = validateInputs(values);
     displayErrors(errors);
+    
+    // If no data is entered, just reset and return
+    if (Object.values(values).every(val => val === 0)) {
+        resetResults();
+        return;
+    }
+
     if (errors.length > 0) return resetResults();
 
     const riskPerShare = Math.abs(values.entryPrice - values.stopLossPrice);
