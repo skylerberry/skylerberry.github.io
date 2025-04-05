@@ -63,9 +63,9 @@ function sanitizeInput(value) {
 // Validation and Error Handling
 function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
     const errors = [];
+    // Only consider meaningful data entry (exclude riskPercentage default value unless other fields are filled)
     const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
 
-    // Only validate if there's actual data entered
     if (hasData) {
         if (accountSize <= 0) errors.push({ element: elements.inputs.accountSize, message: 'Account size must be positive' });
         if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
@@ -116,11 +116,20 @@ function calculatePosition() {
         targetPrice: parseFloat(elements.inputs.targetPrice.value) || 0
     };
 
+    // Check if only riskPercentage has a value (default case on load)
+    const hasMeaningfulData = values.accountSize > 0 || values.entryPrice > 0 || values.stopLossPrice > 0 || values.targetPrice > 0;
+
     const errors = validateInputs(values);
-    displayErrors(errors);
     
-    // If no data is entered, just reset and return
-    if (Object.values(values).every(val => val === 0)) {
+    // Only display errors if there's meaningful data beyond the default risk percentage
+    if (hasMeaningfulData) {
+        displayErrors(errors);
+    } else {
+        displayErrors([]); // Clear any errors on initial load
+    }
+    
+    // If no meaningful data is entered, reset and return
+    if (!hasMeaningfulData) {
         resetResults();
         return;
     }
