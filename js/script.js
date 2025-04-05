@@ -234,3 +234,22 @@ themeSwitch.addEventListener('change', function() {
         localStorage.setItem('theme', 'light');
     }
 });
+
+// Add a reload warning if data has been entered
+window.addEventListener('beforeunload', function(e) {
+  // Check if any fields have values
+  const hasEnteredData = 
+    accountSizeInput.value !== '' || 
+    entryPriceInput.value !== '' || 
+    stopLossPriceInput.value !== '' || 
+    targetPriceInput.value !== '' ||
+    (riskPercentageInput.value !== '' && riskPercentageInput.value !== '1');
+  
+  if (hasEnteredData) {
+    // Standard way to show a confirmation dialog
+    e.preventDefault();
+    // Most modern browsers ignore custom messages, but we set it anyway for older browsers
+    e.returnValue = 'You have unsaved data in the calculator. Are you sure you want to leave?';
+    return e.returnValue;
+  }
+});
