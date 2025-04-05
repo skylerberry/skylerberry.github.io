@@ -60,10 +60,24 @@ function sanitizeInput(value) {
     return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 }
 
+// New function to handle K shorthand conversion
+function convertKShorthand(inputValue) {
+    // Remove any existing commas for parsing
+    const cleanValue = inputValue.replace(/,/g, '');
+    // Check if the input ends with 'K' or 'k'
+    const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
+    if (kMatch) {
+        const numberPart = parseFloat(kMatch[1]);
+        if (!isNaN(numberPart)) {
+            return numberPart * 1000;
+        }
+    }
+    return parseFloat(cleanValue);
+}
+
 // Validation and Error Handling
 function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
     const errors = [];
-    // Only consider meaningful data entry (exclude riskPercentage default value unless other fields are filled)
     const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
 
     if (hasData) {
@@ -72,7 +86,6 @@ function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, r
         if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
         if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
         
-        // Only check these conditions if both values are present
         if (stopLossPrice > 0 && entryPrice > 0 && stopLossPrice >= entryPrice) {
             errors.push({ 
                 element: elements.errors.stopLoss, 
@@ -123,19 +136,10 @@ function calculatePosition() {
         targetPrice: parseFloat(elements.inputs.targetPrice.value) || 0
     };
 
-    // Check if only riskPercentage has a value (default case on load)
-    const hasMeaningfulData = values.accountSize > 0 || values.entryPrice > 0 || values.stopLossPrice > 0 || values.targetPrice > 0;
-
     const errors = validateInputs(values);
+    displayErrors(errors);
     
-    // Only display errors if there's meaningful data beyond the default risk percentage
-    if (hasMeaningfulData) {
-        displayErrors(errors);
-    } else {
-        displayErrors([]); // Clear any errors on initial load
-    }
-    
-    // If no meaningful data is entered, reset and return
+    const hasMeaningfulData = values.accountSize > 0 || values.entryPrice > 0 || values.stopLossPrice > 0 || values.targetPrice > 0;
     if (!hasMeaningfulData) {
         resetResults();
         return;
@@ -168,8 +172,10 @@ function calculatePosition() {
 // Event Listeners
 elements.inputs.accountSize.addEventListener('blur', function() {
     if (this.value) {
-        const numericValue = parseFloat(sanitizeInput(this.value));
-        if (!isNaN(numericValue)) this.value = formatNumber(numericValue);
+        let numericValue = convertKShorthand(this.value); // Convert K shorthand first
+        if (!isNaN(numericValue)) {
+            this.value = formatNumber(numericValue); // Format with commas
+        }
         debouncedCalculate();
     }
 });
