@@ -468,10 +468,11 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 }
 
 .heart-icon {
-    width: 16px;
-    height: 16px;
-    vertical-align: middle;
+    width: 12px; /* Reduced to match 12px font size better */
+    height: 12px;
+    vertical-align: text-bottom; /* Aligns closer to the text baseline */
     display: inline-block;
-    pointer-events: none; /* Prevents selection */
-    user-select: none; /* Prevents text selection */
+    pointer-events: none;
+    user-select: none;
+    margin: 0 2px; /* Adds a little spacing around the icon */
 }
