@@ -71,14 +71,21 @@ function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, r
         if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
         if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
         if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
-        if (stopLossPrice >= entryPrice && stopLossPrice > 0 && entryPrice > 0) errors.push({ 
-            element: elements.errors.stopLoss, 
-            message: 'Stop loss must be below entry price' 
-        });
-        if (targetPrice > 0 && targetPrice <= entryPrice && entryPrice > 0) errors.push({ 
-            element: elements.errors.targetPrice, 
-            message: 'Target price should be above entry price' 
-        });
+        
+        // Only check these conditions if both values are present
+        if (stopLossPrice > 0 && entryPrice > 0 && stopLossPrice >= entryPrice) {
+            errors.push({ 
+                element: elements.errors.stopLoss, 
+                message: 'Stop loss must be below entry price' 
+            });
+        }
+        
+        if (targetPrice > 0 && entryPrice > 0 && targetPrice <= entryPrice) {
+            errors.push({ 
+                element: elements.errors.targetPrice, 
+                message: 'Target price should be above entry price' 
+            });
+        }
     }
     return errors;
 }
