@@ -466,3 +466,12 @@ body.dark-mode .info-content {
 body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     background-color: #4b5563;
 }
+
+.heart-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    display: inline-block;
+    pointer-events: none; /* Prevents selection */
+    user-select: none; /* Prevents text selection */
+}
