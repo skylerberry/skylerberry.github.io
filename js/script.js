@@ -60,11 +60,9 @@ function sanitizeInput(value) {
     return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 }
 
-// New function to handle K shorthand conversion
+// Convert shorthand notation (K for thousands)
 function convertKShorthand(inputValue) {
-    // Remove any existing commas for parsing
     const cleanValue = inputValue.replace(/,/g, '');
-    // Check if the input ends with 'K' or 'k'
     const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
     if (kMatch) {
         const numberPart = parseFloat(kMatch[1]);
@@ -73,6 +71,34 @@ function convertKShorthand(inputValue) {
         }
     }
     return parseFloat(cleanValue);
+}
+
+// Handle shorthand conversion in real-time
+function setupShorthandConversion(input) {
+    let isConverting = false; // Flag to prevent infinite loops
+
+    input.addEventListener('input', function() {
+        if (isConverting) return; // Prevent re-triggering during conversion
+
+        const cursorPosition = this.selectionStart; // Save cursor position
+        const originalLength = this.value.length;
+
+        const convertedValue = convertKShorthand(this.value);
+        if (!isNaN(convertedValue)) {
+            isConverting = true; // Set flag to prevent loop
+            this.value = formatNumber(convertedValue); // Update value with formatted number
+
+            // Adjust cursor position after conversion
+            const newLength = this.value.length;
+            const cursorAdjustment = newLength - originalLength;
+            const newCursorPosition = cursorPosition + cursorAdjustment;
+            this.setSelectionRange(newCursorPosition, newCursorPosition);
+
+            isConverting = false; // Reset flag
+        }
+
+        debouncedCalculate(); // Trigger calculation
+    });
 }
 
 // Validation and Error Handling
@@ -170,15 +196,8 @@ function calculatePosition() {
 }
 
 // Event Listeners
-elements.inputs.accountSize.addEventListener('blur', function() {
-    if (this.value) {
-        let numericValue = convertKShorthand(this.value); // Convert K shorthand first
-        if (!isNaN(numericValue)) {
-            this.value = formatNumber(numericValue); // Format with commas
-        }
-        debouncedCalculate();
-    }
-});
+// Remove the old blur event listener for accountSize and use the new function
+setupShorthandConversion(elements.inputs.accountSize);
 
 elements.controls.riskButtons.forEach(button => {
     button.addEventListener('click', function() {
