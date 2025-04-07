@@ -12,8 +12,7 @@ const elements = {
         totalRisk: document.getElementById('totalRiskValue'),
         percentOfAccount: document.getElementById('percentOfAccountValue'),
         rMultiple: document.getElementById('rMultipleValue'),
-        fiveRTarget: document.getElementById('fiveRTargetValue'),
-        progressCircle: document.querySelector('.progress-circle-fill') // New for progress ring
+        fiveRTarget: document.getElementById('fiveRTargetValue')
     },
     errors: {
         stopLoss: document.getElementById('stopLossError'),
@@ -32,8 +31,7 @@ const elements = {
 const defaults = {
     riskPercentage: 1,
     emptyResult: '-',
-    rMultipleEmpty: '- R',
-    progressCircumference: 157 // 2 * π * 25 (radius from CSS)
+    rMultipleEmpty: '- R'
 };
 
 // Utility Functions
@@ -77,26 +75,29 @@ function convertKShorthand(inputValue) {
 
 // Handle shorthand conversion in real-time
 function setupShorthandConversion(input) {
-    let isConverting = false;
+    let isConverting = false; // Flag to prevent infinite loops
 
     input.addEventListener('input', function() {
-        if (isConverting) return;
+        if (isConverting) return; // Prevent re-triggering during conversion
 
-        const cursorPosition = this.selectionStart;
+        const cursorPosition = this.selectionStart; // Save cursor position
         const originalLength = this.value.length;
 
         const convertedValue = convertKShorthand(this.value);
         if (!isNaN(convertedValue)) {
-            isConverting = true;
-            this.value = formatNumber(convertedValue);
+            isConverting = true; // Set flag to prevent loop
+            this.value = formatNumber(convertedValue); // Update value with formatted number
+
+            // Adjust cursor position after conversion
             const newLength = this.value.length;
             const cursorAdjustment = newLength - originalLength;
             const newCursorPosition = cursorPosition + cursorAdjustment;
             this.setSelectionRange(newCursorPosition, newCursorPosition);
-            isConverting = false;
+
+            isConverting = false; // Reset flag
         }
 
-        debouncedCalculate();
+        debouncedCalculate(); // Trigger calculation
     });
 }
 
@@ -129,20 +130,14 @@ function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, r
 }
 
 function displayErrors(errors) {
-    // Reset all input invalid states
-    Object.values(elements.inputs).forEach(input => input.classList.remove('invalid'));
     Object.values(elements.errors).forEach(error => {
         error.textContent = '';
         error.classList.add('hidden');
     });
-
     errors.forEach(({ element, message }) => {
-        if (element.tagName === 'INPUT') {
-            element.classList.add('invalid'); // Add invalid class to input
-        } else {
-            element.textContent = message;
-            element.classList.remove('hidden');
-        }
+        if (element.tagName === 'INPUT') return;
+        element.textContent = message;
+        element.classList.remove('hidden');
     });
 }
 
@@ -154,24 +149,6 @@ function resetResults() {
         elements.results.percentOfAccount.textContent = defaults.emptyResult;
         elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
         elements.results.fiveRTarget.textContent = defaults.emptyResult;
-        elements.results.progressCircle.style.strokeDashoffset = defaults.progressCircumference; // Reset progress ring
-        elements.results.progressCircle.style.stroke = 'var(--progress-green)'; // Default color
-    });
-}
-
-// Update Progress Ring
-function updateProgressRing(percentOfAccount) {
-    const percent = Math.min(parseFloat(percentOfAccount) || 0, 100); // Cap at 100%
-    const offset = defaults.progressCircumference * (1 - percent / 100);
-    let color;
-
-    if (percent <= 5) color = 'var(--progress-green)';
-    else if (percent <= 10) color = 'var(--progress-yellow)';
-    else color = 'var(--progress-red)';
-
-    requestAnimationFrame(() => {
-        elements.results.progressCircle.style.strokeDashoffset = offset;
-        elements.results.progressCircle.style.stroke = color;
     });
 }
 
@@ -215,11 +192,11 @@ function calculatePosition() {
         Object.entries(results).forEach(([key, value]) => {
             elements.results[key].textContent = value;
         });
-        updateProgressRing(results.percentOfAccount); // Update progress ring
     });
 }
 
 // Event Listeners
+// Remove the old blur event listener for accountSize and use the new function
 setupShorthandConversion(elements.inputs.accountSize);
 
 elements.controls.riskButtons.forEach(button => {
