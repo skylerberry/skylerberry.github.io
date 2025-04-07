@@ -99,9 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resetResults();
     });
 
-    // Theme Toggle
+    // Theme Toggle - Fixed to match CSS selector
     const themeSwitch = document.getElementById('theme-switch');
     const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    // Set the initial theme on html element to match CSS selector
     document.documentElement.setAttribute('data-theme', savedTheme);
     themeSwitch.checked = savedTheme === 'dark';
 
