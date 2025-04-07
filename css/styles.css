@@ -1,21 +1,17 @@
 :root {
     /* Colors */
-    --theme-color: #1a91e0; /* Slightly darker blue for better contrast */
+    --theme-color: #1CA1F2;
     --trim-color: #f59e0b;
     --text-primary: #374151;
     --text-secondary: #6b7280;
-    --error-color: #ef4444;
     /* Spacing */
     --spacing-sm: 8px;
     --spacing-md: 12px;
-    --spacing-lg: 20px; /* Increased for better breathing room */
+    --spacing-lg: 16px;
     /* Other */
     --border-radius: 6px;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
-    --progress-green: #22c55e;
-    --progress-yellow: #facc15;
-    --progress-red: #ef4444;
 }
 
 html {
@@ -46,7 +42,7 @@ body {
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    padding: var(--spacing-lg); /* Increased padding */
+    padding: var(--spacing-md);
     margin: 10px;
     contain: layout style;
     -ms-overflow-style: thin;
@@ -64,7 +60,7 @@ body {
 }
 
 .calculator-title {
-    font-size: 22px; /* Slightly larger for hierarchy */
+    font-size: 20px;
     font-weight: bold;
     text-align: center;
     margin: 0 0 var(--spacing-lg) 0;
@@ -74,15 +70,7 @@ body {
 .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg); /* Increased gap */
-}
-
-/* New section-card for visual grouping */
-.section-card {
-    background-color: #f9fafb;
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
+    gap: var(--spacing-lg);
 }
 
 .section-title {
@@ -144,14 +132,7 @@ body {
 
 .text-input:focus, .number-input:focus {
     border-color: var(--theme-color);
-    box-shadow: 0 0 0 2px rgba(26, 145, 224, 0.2); /* Updated to match new theme color */
-    outline: 2px solid var(--theme-color); /* Enhanced focus state */
-    outline-offset: 2px;
-}
-
-/* Visual feedback for invalid inputs */
-.text-input.invalid, .number-input.invalid {
-    border-color: var(--error-color);
+    box-shadow: 0 0 0 2px rgba(28, 161, 242, 0.2);
 }
 
 .number-input-pct {
@@ -166,7 +147,7 @@ body {
 
 .error-text {
     font-size: 12px;
-    color: var(--error-color);
+    color: #ef4444;
     margin-top: 2px;
 }
 
@@ -177,24 +158,20 @@ body {
     margin-bottom: 6px;
 }
 
-/* Standardized button styling */
-.btn-standard {
-    padding: 6px 8px; /* Consistent padding */
+.risk-button {
+    padding: 4px 0;
     background-color: #f3f4f6;
     color: var(--text-primary);
-    border: 1px solid #d1d5db;
+    border: none;
     border-radius: var(--border-radius);
     font-weight: 500;
     cursor: pointer;
-    transition: transform 0.2s, background-color 0.2s;
+    flex: 1;
+    min-width: 35px;
     font-size: 12px;
 }
 
-.btn-standard:hover {
-    transform: scale(1.05); /* Subtle hover effect */
-}
-
-.btn-standard:focus {
+.risk-button:focus {
     outline: 2px solid var(--theme-color);
     outline-offset: 2px;
 }
@@ -202,25 +179,32 @@ body {
 .risk-button.active {
     background-color: var(--theme-color);
     color: white;
-    border-color: var(--theme-color);
 }
 
 .clear-button {
-    margin: var(--spacing-lg) auto; /* Increased margin */
+    display: block;
+    margin: var(--spacing-md) auto;
+    background-color: #f3f4f6;
+    color: var(--text-primary);
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius);
+    padding: 6px var(--spacing-md);
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 13px;
 }
 
-/* Results Section */
 .results-section {
-    margin-top: var(--spacing-lg); /* Increased spacing */
+    margin-top: var(--spacing-md);
     padding: var(--spacing-md);
-    background-color: rgba(26, 145, 224, 0.1); /* Updated to match new theme color */
+    background-color: rgba(28, 161, 242, 0.1);
     border-radius: 8px;
 }
 
 .results-title {
     font-size: 16px;
     font-weight: 600;
-    border-bottom: 1px solid rgba(26, 145, 224, 0.3);
+    border-bottom: 1px solid rgba(28, 161, 242, 0.3);
     padding-bottom: 6px;
     margin-bottom: var(--spacing-md);
     color: var(--theme-color);
@@ -261,7 +245,7 @@ body {
 }
 
 .result-value.large {
-    font-size: 26px; /* Increased for hierarchy */
+    font-size: 22px;
 }
 
 .result-value.trim {
@@ -272,49 +256,24 @@ body {
     display: inline-block;
     margin-left: 6px;
     background-color: #fef3c7;
-    color: #92400e;
+    color:кая #92400e;
     font-size: 11px;
     font-weight: 500;
     padding: 1px 6px;
     border-radius: 4px;
 }
 
-/* Progress Ring */
-.progress-ring-container {
-    position: relative;
+.info-button {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-}
-
-.progress-ring {
-    position: relative;
-    width: 60px;
-    height: 60px;
-}
-
-.progress-circle {
-    transform: rotate(-90deg);
-}
-
-.progress-circle-bg {
-    fill: none;
-    stroke: #e5e7eb;
-    stroke-width: 3;
-}
-
-.progress-circle-fill {
-    fill: none;
-    stroke: var(--progress-green); /* Default to green */
-    stroke-width: 3;
-    stroke-dasharray: 157; /* Circumference of circle with r=25 (2πr) */
-    stroke-dashoffset: 157; /* Starts empty */
-    transition: stroke-dashoffset 0.5s ease, stroke 0.2s ease;
-}
-
-/* Info Section */
-.info-button {
-    margin-top: var(--spacing-lg); /* Increased spacing */
+    background-color: transparent;
+    border: none;
+    color: var(--theme-color);
+    font-weight: 500;
+    padding: 0;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: var(--spacing-md);
 }
 
 .info-icon {
@@ -324,20 +283,13 @@ body {
     line-height: 1;
 }
 
-.info-card {
+.info-content {
     margin-top: 6px;
     padding: 10px;
     background-color: #f9fafb;
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm); /* Added elevation */
     font-size: 13px;
     color: #4b5563;
-    transition: opacity 0.3s ease, transform 0.3s ease; /* For animation */
-}
-
-.info-card.hidden {
-    opacity: 0;
-    transform: translateY(-10px);
 }
 
 .hidden {
@@ -348,15 +300,19 @@ body {
     text-align: center;
     font-size: 12px;
     color: var(--text-secondary);
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
     border-top: 1px solid #e5e7eb;
-    line-height: 1.4;
+    line-height: 1.4; /* Slightly increased for better readability */
     display: flex;
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: 3px; /* Creates consistent spacing between elements */
+}
+
+.heart {
+    color: #ff6b6b;
 }
 
 .calculator-footer a {
@@ -366,7 +322,7 @@ body {
 
 @media (max-width: 640px) {
     .calculator-container {
-        padding: 20px; /* Increased for mobile */
+        padding: var(--spacing-md);
         max-height: 100%;
         width: 100%;
         margin: 0;
@@ -375,15 +331,14 @@ body {
     
     .grid, .results-grid {
         grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
+        gap: var(--spacing-md);
     }
     
     .calculator-title {
-        font-size: 20px;
+        font-size: 18px;
     }
 }
 
-/* Theme Toggle */
 .theme-toggle-container {
     display: flex;
     justify-content: center;
@@ -447,7 +402,6 @@ body {
 .theme-toggle input:checked + .toggle-track .toggle-icon.light { opacity: 0; }
 .theme-toggle input:checked + .toggle-track .toggle-icon.dark { opacity: 1; }
 
-/* Dark Mode */
 body.dark-mode {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
@@ -466,10 +420,8 @@ body.dark-mode .calculator-footer a {
 
 body.dark-mode .input-label,
 body.dark-mode .input-suffix,
-body.dark-mode .input-prefix,
-body.dark-mode .helper-text,
-body.dark-mode .calculator-footer {
-    color: #d1d5db; /* Lightened for better contrast */
+body.dark-mode .input-prefix {
+    color: #d1d5db;
 }
 
 body.dark-mode .text-input,
@@ -479,15 +431,14 @@ body.dark-mode .number-input {
     color: #e5e7eb;
 }
 
-body.dark-mode .text-input:focus,
-body.dark-mode .number-input:focus {
-    box-shadow: 0 0 0 2px rgba(26, 145, 224, 0.2);
+body.dark-mode .helper-text,
+body.dark-mode .calculator-footer {
+    color: #9ca3af;
 }
 
-body.dark-mode .btn-standard {
+body.dark-mode .risk-button {
     background-color: #374151;
     color: #d1d5db;
-    border-color: #4b5563;
 }
 
 body.dark-mode .risk-button.active {
@@ -495,12 +446,17 @@ body.dark-mode .risk-button.active {
     color: white;
 }
 
-body.dark-mode .results-section {
-    background-color: rgba(26, 145, 224, 0.15);
+body.dark-mode .clear-button {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
 }
 
-body.dark-mode .result-card,
-body.dark-mode .section-card {
+body.dark-mode .results-section {
+    background-color: rgba(28, 161, 242, 0.15);
+}
+
+body.dark-mode .result-card {
     background-color: #1f2937;
 }
 
@@ -508,7 +464,7 @@ body.dark-mode .result-label {
     color: #9ca3af;
 }
 
-body.dark-mode .info-card {
+body.dark-mode .info-content {
     background-color: #1f2937;
     color: #d1d5db;
 }
@@ -517,27 +473,13 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     background-color: #4b5563;
 }
 
-body.dark-mode .toggle-track {
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.1); /* Subtle glow */
-}
-
 .heart-icon {
-    width: 14px;
+    width: 14px; /* Slightly larger for better visibility */
     height: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    top: -1px;
-    fill: #ff6b6b;
-}
-
-/* Animation for results update */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.result-value {
-    animation: fadeIn 0.3s ease;
+    top: -1px; /* Fine-tune the vertical alignment */
+    fill: #ff6b6b; /* Set the heart color */
 }
