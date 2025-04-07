@@ -13,7 +13,8 @@
     --transition-speed: 0.2s;
 }
 
-[data-theme="dark"] {
+/* Fixed selector to match the JavaScript implementation */
+html[data-theme="dark"] {
     --primary-color: #66B0FF;
     --background-color: #1E1E1E;
     --text-color: #F5F5F5;
@@ -136,7 +137,8 @@ label {
     border-right: 1px solid var(--border-color);
 }
 
-[data-theme="dark"] .currency-input span {
+/* Updated selector to match the HTML data-theme attribute */
+html[data-theme="dark"] .currency-input span {
     background-color: #333;
     border-right: 1px solid var(--border-color);
 }
@@ -161,7 +163,8 @@ input[type="number"]:focus {
     margin-left: var(--spacing-sm);
 }
 
-[data-theme="dark"] .helper-text {
+/* Updated selector to match the HTML data-theme attribute */
+html[data-theme="dark"] .helper-text {
     color: #BBB;
 }
 
