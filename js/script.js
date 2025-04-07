@@ -12,7 +12,13 @@ const elements = {
         totalRisk: document.getElementById('totalRiskValue'),
         percentOfAccount: document.getElementById('percentOfAccountValue'),
         rMultiple: document.getElementById('rMultipleValue'),
-        fiveRTarget: document.getElementById('fiveRTargetValue')
+        fiveRTarget: document.getElementById('fiveRTargetValue'),
+        // New profit section elements
+        profitSection: document.getElementById('profitSection'),
+        profitPerShare: document.getElementById('profitPerShareValue'),
+        totalProfit: document.getElementById('totalProfitValue'),
+        roi: document.getElementById('roiValue'),
+        riskReward: document.getElementById('riskRewardValue')
     },
     errors: {
         stopLoss: document.getElementById('stopLossError'),
@@ -46,6 +52,10 @@ function formatCurrency(value) {
 
 function formatNumber(value) {
     return new Intl.NumberFormat('en-US').format(value);
+}
+
+function formatPercentage(value) {
+    return `${value.toFixed(2)}%`;
 }
 
 function debounce(func, wait) {
@@ -149,6 +159,13 @@ function resetResults() {
         elements.results.percentOfAccount.textContent = defaults.emptyResult;
         elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
         elements.results.fiveRTarget.textContent = defaults.emptyResult;
+        
+        // Hide and reset profit section
+        elements.results.profitSection.classList.add('hidden');
+        elements.results.profitPerShare.textContent = defaults.emptyResult;
+        elements.results.totalProfit.textContent = defaults.emptyResult;
+        elements.results.roi.textContent = defaults.emptyResult;
+        elements.results.riskReward.textContent = defaults.emptyResult;
     });
 }
 
@@ -176,21 +193,49 @@ function calculatePosition() {
     const riskPerShare = Math.abs(values.entryPrice - values.stopLossPrice);
     const dollarRiskAmount = (values.accountSize * values.riskPercentage) / 100;
     const shares = Math.floor(dollarRiskAmount / riskPerShare);
+    const positionSize = shares * values.entryPrice;
 
     const results = {
         shares: formatNumber(shares),
-        positionSize: formatCurrency(shares * values.entryPrice),
+        positionSize: formatCurrency(positionSize),
         totalRisk: formatCurrency(shares * riskPerShare),
-        percentOfAccount: `${((shares * values.entryPrice) / values.accountSize * 100).toFixed(2)}%`,
+        percentOfAccount: formatPercentage((positionSize / values.accountSize) * 100),
         rMultiple: values.targetPrice > values.entryPrice
             ? `${((values.targetPrice - values.entryPrice) / riskPerShare).toFixed(2)} R`
             : defaults.rMultipleEmpty,
         fiveRTarget: formatCurrency(values.entryPrice + (5 * riskPerShare))
     };
 
+    // Calculate profit metrics if target price is specified
+    const hasValidTargetPrice = values.targetPrice > values.entryPrice;
+    
+    if (hasValidTargetPrice) {
+        const profitPerShare = values.targetPrice - values.entryPrice;
+        const totalProfit = profitPerShare * shares;
+        const roi = (totalProfit / positionSize) * 100;
+        const riskReward = totalProfit / (shares * riskPerShare);
+        
+        // Add profit results
+        Object.assign(results, {
+            profitPerShare: formatCurrency(profitPerShare),
+            totalProfit: formatCurrency(totalProfit),
+            roi: formatPercentage(roi),
+            riskReward: riskReward.toFixed(2)
+        });
+        
+        // Show profit section
+        elements.results.profitSection.classList.remove('hidden');
+    } else {
+        // Hide profit section if no target price
+        elements.results.profitSection.classList.add('hidden');
+    }
+
     requestAnimationFrame(() => {
+        // Update all result elements
         Object.entries(results).forEach(([key, value]) => {
-            elements.results[key].textContent = value;
+            if (elements.results[key]) {
+                elements.results[key].textContent = value;
+            }
         });
     });
 }
@@ -258,8 +303,12 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 // Initialization
-if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-mode');
-    elements.controls.themeSwitch.checked = true;
+function initializeTheme() {
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        elements.controls.themeSwitch.checked = true;
+    }
 }
+
+initializeTheme();
 calculatePosition();
