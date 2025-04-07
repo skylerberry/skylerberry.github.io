@@ -2,6 +2,7 @@
     /* Colors */
     --theme-color: #1CA1F2;
     --trim-color: #f59e0b;
+    --profit-color: #28a745;
     --text-primary: #374151;
     --text-secondary: #6b7280;
     /* Spacing */
@@ -256,7 +257,7 @@ body {
     display: inline-block;
     margin-left: 6px;
     background-color: #fef3c7;
-    color:кая #92400e;
+    color: #92400e;
     font-size: 11px;
     font-weight: 500;
     padding: 1px 6px;
@@ -482,4 +483,50 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     position: relative;
     top: -1px; /* Fine-tune the vertical alignment */
     fill: #ff6b6b; /* Set the heart color */
+}
+
+/* Profit Section Styles */
+.profit-section {
+    margin-top: var(--spacing-md);
+    border-top: 1px solid rgba(28, 161, 242, 0.3);
+    padding-top: var(--spacing-md);
+}
+
+.profit-section.hidden {
+    display: none;
+}
+
+.profit-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--theme-color);
+}
+
+.profit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+/* Profit value styling */
+.result-value.profit {
+    color: var(--profit-color);
+}
+
+/* Profit card border */
+.result-card.profit-card {
+    border-left: 3px solid var(--profit-color);
+}
+
+/* Dark mode support for profit values */
+body.dark-mode {
+    --profit-color: #5cb85c;
+}
+
+/* Mobile responsiveness for profit section */
+@media (max-width: 640px) {
+    .profit-grid {
+        grid-template-columns: 1fr;
+    }
 }
