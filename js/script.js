@@ -25,6 +25,7 @@ const calculateResults = () => {
 
     // Validation
     if (accountSize <= 0 || riskPercentage <= 0 || entryPrice <= 0 || stopLoss <= 0 || stopLoss >= entryPrice) {
+        console.log('Validation failed:', { accountSize, riskPercentage, entryPrice, stopLoss }); // Debug log
         resetResults();
         return;
     }
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     customRiskInput.addEventListener('input', () => {
         percentageButtons.forEach(btn => btn.classList.remove('active'));
-        const closestButton = Array.from(percentageButtons).find(btn =>
+        const closestButton = Array.from(percentageButtons).find(btn => 
             parseFloat(btn.dataset.value) === parseFloat(customRiskInput.value)
         );
         if (closestButton) closestButton.classList.add('active');
