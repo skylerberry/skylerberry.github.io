@@ -26,7 +26,8 @@
         </div>
         
         <div class="grid">
-            <div>
+            <!-- Added section-card class for visual separation -->
+            <div class="section-card">
                 <h2 class="section-title">Account Information</h2>
                 
                 <div class="input-group">
@@ -40,13 +41,14 @@
                 <div class="input-group">
                     <label class="input-label" for="riskPercentage">Risk per Trade (%)</label>
                     <div class="risk-buttons">
-                        <button type="button" class="risk-button" data-value="0.25">0.25%</button>
-                        <button type="button" class="risk-button" data-value="0.5">0.5%</button>
-                        <button type="button" class="risk-button" data-value="0.75">0.75%</button>
-                        <button type="button" class="risk-button active" data-value="1">1%</button>
-                        <button type="button" class="risk-button" data-value="1.5">1.5%</button>
-                        <button type="button" class="risk-button" data-value="2">2%</button>
-                        <button type="button" class="risk-button" data-value="3">3%</button>
+                        <!-- Standardized button classes -->
+                        <button type="button" class="risk-button btn-standard" data-value="0.25">0.25%</button>
+                        <button type="button" class="risk-button btn-standard" data-value="0.5">0.5%</button>
+                        <button type="button" class="risk-button btn-standard" data-value="0.75">0.75%</button>
+                        <button type="button" class="risk-button btn-standard active" data-value="1">1%</button>
+                        <button type="button" class="risk-button btn-standard" data-value="1.5">1.5%</button>
+                        <button type="button" class="risk-button btn-standard" data-value="2">2%</button>
+                        <button type="button" class="risk-button btn-standard" data-value="3">3%</button>
                     </div>
                     <div class="input-container">
                         <input type="number" id="riskPercentage" class="number-input number-input-pct" value="1" min="0" max="100" step="0.05" required>
@@ -55,7 +57,8 @@
                 </div>
             </div>
             
-            <div>
+            <!-- Added section-card class for visual separation -->
+            <div class="section-card">
                 <h2 class="section-title">Trade Details</h2>
                 
                 <div class="input-group">
@@ -88,15 +91,23 @@
             </div>
         </div>
         
-        <button type="button" id="clearButton" class="clear-button" aria-label="Clear all calculator fields">Clear Calculator</button>
+        <!-- Updated clear button with consistent styling -->
+        <button type="button" id="clearButton" class="clear-button btn-standard" aria-label="Clear all calculator fields">Clear Calculator</button>
         
         <div class="results-section">
             <h2 class="results-title">Results</h2>
             
             <div class="results-grid">
-                <div class="result-card full-width">
+                <!-- Wrapped shares in progress-ring container -->
+                <div class="result-card full-width progress-ring-container">
                     <div class="result-label">Shares to Purchase</div>
-                    <div id="sharesValue" class="result-value large">-</div>
+                    <div class="progress-ring">
+                        <svg class="progress-circle" width="60" height="60">
+                            <circle class="progress-circle-bg" cx="30" cy="30" r="25"></circle>
+                            <circle class="progress-circle-fill" cx="30" cy="30" r="25"></circle>
+                        </svg>
+                        <div id="sharesValue" class="result-value large">-</div>
+                    </div>
                 </div>
                 
                 <div class="result-card">
@@ -129,12 +140,13 @@
             </div>
         </div>
         
-        <button type="button" id="infoButton" class="info-button" aria-expanded="false">
+        <!-- Enhanced info section with card styling -->
+        <button type="button" id="infoButton" class="info-button btn-standard" aria-expanded="false">
             <span id="infoIcon" class="info-icon">+</span>
             How is position size calculated?
         </button>
         
-        <div id="infoContent" class="info-content hidden" role="region" aria-expanded="false">
+        <div id="infoContent" class="info-content info-card hidden" role="region" aria-expanded="false">
             <p>Position size is calculated using the following formula:</p>
             <ol>
                 <li>Calculate risk amount in dollars: Account Size × Risk Percentage</li>
@@ -145,10 +157,10 @@
             <p>This approach ensures you never risk more than your specified percentage of account on any trade.</p>
         </div>
         
-<footer class="calculator-footer">
-    Made with <svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b6b"/></svg> by Skyler 
-    <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
-</footer>
+        <footer class="calculator-footer">
+            Made with <svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b6b"/></svg> by Skyler 
+            <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
+        </footer>
     </form>
 
     <script src="js/script.js" defer></script>
