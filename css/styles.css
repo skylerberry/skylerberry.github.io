@@ -33,19 +33,19 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: var(--spacing-md);
 }
 
 .calculator-container {
     max-width: 800px;
     width: 94%;
-    max-height: 98vh;
-    overflow: auto;
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
     padding: var(--spacing-md);
     margin: 10px;
-    contain: layout style;
+    /* Removed max-height and overflow properties to prevent scrollbar */
+    contain: content;
     -ms-overflow-style: thin;
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
@@ -64,7 +64,7 @@ body {
     font-size: 20px;
     font-weight: bold;
     text-align: center;
-    margin: 0 0 var(--spacing-lg) 0;
+    margin: 0 0 var(--spacing-sm) 0;
     color: var(--theme-color);
 }
 
@@ -79,12 +79,12 @@ body {
     font-weight: 600;
     border-bottom: 1px solid #e5e7eb;
     padding-bottom: 6px;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 4px;
     color: var(--theme-color);
 }
 
 .input-group {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 8px;
 }
 
 .input-label {
@@ -184,7 +184,7 @@ body {
 
 .clear-button {
     display: block;
-    margin: var(--spacing-md) auto;
+    margin: var(--spacing-sm) auto;
     background-color: #f3f4f6;
     color: var(--text-primary);
     border: 1px solid #d1d5db;
@@ -196,7 +196,7 @@ body {
 }
 
 .results-section {
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
     padding: var(--spacing-md);
     background-color: rgba(28, 161, 242, 0.1);
     border-radius: 8px;
@@ -207,19 +207,19 @@ body {
     font-weight: 600;
     border-bottom: 1px solid rgba(28, 161, 242, 0.3);
     padding-bottom: 6px;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     color: var(--theme-color);
 }
 
 .results-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
+    gap: 8px;
 }
 
 .result-card {
     background-color: white;
-    padding: 10px;
+    padding: 8px 10px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
     border-left: 3px solid var(--theme-color);
@@ -240,13 +240,13 @@ body {
 }
 
 .result-value {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     color: var(--theme-color);
 }
 
 .result-value.large {
-    font-size: 22px;
+    font-size: 20px;
 }
 
 .result-value.trim {
@@ -274,7 +274,7 @@ body {
     padding: 0;
     cursor: pointer;
     font-size: 13px;
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
 }
 
 .info-icon {
@@ -301,8 +301,8 @@ body {
     text-align: center;
     font-size: 12px;
     color: var(--text-secondary);
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
     border-top: 1px solid #e5e7eb;
     line-height: 1.4;
     display: flex;
@@ -324,10 +324,8 @@ body {
 @media (max-width: 640px) {
     .calculator-container {
         padding: var(--spacing-md);
-        max-height: 100%;
         width: 100%;
         margin: 0;
-        border-radius: 0;
     }
 
     .grid, .results-grid {
@@ -343,7 +341,7 @@ body {
 .theme-toggle-container {
     display: flex;
     justify-content: center;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
 }
 
 .theme-toggle {
@@ -487,9 +485,9 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 
 /* Profit Section Styles */
 .profit-section {
-    margin-top: var(--spacing-md);
+    margin-top: 8px;
     border-top: 1px solid rgba(28, 161, 242, 0.3);
-    padding-top: var(--spacing-md);
+    padding-top: 8px;
 }
 
 .profit-section.hidden {
@@ -499,14 +497,14 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 .profit-title {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 8px;
     color: var(--theme-color);
 }
 
 .profit-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
+    gap: 8px;
 }
 
 /* Profit value styling */
@@ -519,48 +517,7 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     border-left: 3px solid var(--profit-color);
 }
 
-/* Dark mode support for profit values */
-body.dark-mode {
-    --profit-color: #5cb85c;
-}
-
-/* Mobile responsiveness for profit section */
-@media (max-width: 640px) {
-    .profit-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* New Add Profit Button Styles */
-.add-profit-button {
-    margin-left: 6px;
-    width: 20px;
-    height: 20px;
-    border: none;
-    border-radius: 50%;
-    background-color: var(--profit-color);
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    vertical-align: middle;
-    transition: transform 0.2s ease;
-}
-
-.add-profit-button:hover {
-    transform: scale(1.1);
-}
-
-.add-profit-button:focus {
-    outline: 2px solid var(--theme-color);
-    outline-offset: 2px;
-}
-
-body.dark-mode .add-profit-button {
-    background-color: #5cb85c;
-}
-
-/* New styles for the add profit button feature */
+/* Add profit button styling */
 .profit-container {
     display: flex;
     align-items: center;
@@ -581,6 +538,7 @@ body.dark-mode .add-profit-button {
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0.9;
+    position: relative;
 }
 
 .add-profit-button:hover {
@@ -589,9 +547,10 @@ body.dark-mode .add-profit-button {
 }
 
 .add-profit-button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
+    opacity: 0.5;
+    cursor: default;
     transform: none;
+    background-color: #6c757d; /* Gray out instead of showing "not allowed" cursor */
 }
 
 .add-icon {
@@ -599,16 +558,11 @@ body.dark-mode .add-profit-button {
     font-weight: bold;
 }
 
-/* Dark mode support */
-body.dark-mode .add-profit-button {
-    background-color: var(--profit-color);
-}
-
 /* Add tooltip to show what happens */
 .add-profit-button::after {
-    content: "Add profit to account";
+    content: attr(title);
     position: absolute;
-    bottom: -30px;
+    bottom: -25px;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.8);
@@ -621,6 +575,7 @@ body.dark-mode .add-profit-button {
     visibility: hidden;
     transition: all 0.2s ease;
     pointer-events: none;
+    z-index: 10;
 }
 
 .add-profit-button:hover::after {
@@ -639,8 +594,17 @@ body.dark-mode .add-profit-button {
     animation: highlightField 1.5s ease;
 }
 
-/* Make sure the tooltip is visible on mobile */
+/* Dark mode support for profit values */
+body.dark-mode {
+    --profit-color: #5cb85c;
+}
+
+/* Mobile responsiveness for profit section */
 @media (max-width: 640px) {
+    .profit-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .add-profit-button::after {
         bottom: -25px;
         font-size: 10px;
