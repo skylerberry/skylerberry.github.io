@@ -257,14 +257,16 @@ function addProfitToAccount() {
     const accountSizeInput = elements.inputs.accountSize;
     const totalProfitText = elements.results.totalProfit.textContent;
     
-    // If either is not available or profit is negative/zero, do nothing
+    // If either is not available, do nothing
     if (accountSizeInput.value === '' || totalProfitText === defaults.emptyResult) {
         return;
     }
     
-    // Convert values to numbers
+    // Convert values to numbers - improved parsing
     const currentAccountSize = parseFloat(sanitizeInput(accountSizeInput.value)) || 0;
-    const profitValue = parseFloat(totalProfitText.replace(/[^0-9.-]/g, '')) || 0;
+    // Extract just the number from the currency string
+    const profitString = totalProfitText.replace(/[^0-9.-]/g, '');
+    const profitValue = parseFloat(profitString) || 0;
     
     if (profitValue <= 0) {
         return;
@@ -289,9 +291,17 @@ function addProfitToAccount() {
 function updateAddProfitButtonState() {
     const totalProfitText = elements.results.totalProfit.textContent;
     const hasProfit = totalProfitText !== defaults.emptyResult && 
-                     parseFloat(totalProfitText.replace(/[^0-9.-]/g, '')) > 0;
+                     !totalProfitText.includes('-') &&
+                     totalProfitText !== '$0.00';
     
     elements.controls.addProfitButton.disabled = !hasProfit;
+    
+    // Add tooltip only if profit exists
+    if (hasProfit) {
+        elements.controls.addProfitButton.title = "Add profit to account size";
+    } else {
+        elements.controls.addProfitButton.title = "";
+    }
 }
 
 // Event Listeners
