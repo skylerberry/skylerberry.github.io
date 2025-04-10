@@ -559,3 +559,91 @@ body.dark-mode {
 body.dark-mode .add-profit-button {
     background-color: #5cb85c;
 }
+
+/* New styles for the add profit button feature */
+.profit-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-profit-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--profit-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.9;
+}
+
+.add-profit-button:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.add-profit-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.add-icon {
+    line-height: 1;
+    font-weight: bold;
+}
+
+/* Dark mode support */
+body.dark-mode .add-profit-button {
+    background-color: var(--profit-color);
+}
+
+/* Add tooltip to show what happens */
+.add-profit-button::after {
+    content: "Add profit to account";
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.add-profit-button:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Animation for highlighting account size update */
+@keyframes highlightField {
+    0% { background-color: transparent; }
+    30% { background-color: rgba(40, 167, 69, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.highlight-update {
+    animation: highlightField 1.5s ease;
+}
+
+/* Make sure the tooltip is visible on mobile */
+@media (max-width: 640px) {
+    .add-profit-button::after {
+        bottom: -25px;
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+}
