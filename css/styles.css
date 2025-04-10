@@ -304,12 +304,12 @@ body {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
     border-top: 1px solid #e5e7eb;
-    line-height: 1.4; /* Slightly increased for better readability */
+    line-height: 1.4;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 3px; /* Creates consistent spacing between elements */
+    gap: 3px;
 }
 
 .heart {
@@ -475,14 +475,14 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 }
 
 .heart-icon {
-    width: 14px; /* Slightly larger for better visibility */
+    width: 14px;
     height: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    top: -1px; /* Fine-tune the vertical alignment */
-    fill: #ff6b6b; /* Set the heart color */
+    top: -1px;
+    fill: #ff6b6b;
 }
 
 /* Profit Section Styles */
@@ -529,4 +529,33 @@ body.dark-mode {
     .profit-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* New Add Profit Button Styles */
+.add-profit-button {
+    margin-left: 6px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--profit-color);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+.add-profit-button:hover {
+    transform: scale(1.1);
+}
+
+.add-profit-button:focus {
+    outline: 2px solid var(--theme-color);
+    outline-offset: 2px;
+}
+
+body.dark-mode .add-profit-button {
+    background-color: #5cb85c;
 }
