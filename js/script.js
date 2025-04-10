@@ -234,7 +234,9 @@ function calculatePosition() {
 }
 
 // Function to add profit to account size
-function addProfitToAccount() {
+function addProfitToAccount(event) {
+    event.preventDefault(); // Prevent any default form submission behavior
+
     const totalProfitElement = elements.results.totalProfit;
     const accountSizeInput = elements.inputs.accountSize;
     
@@ -245,7 +247,10 @@ function addProfitToAccount() {
     if (profit > 0 && currentAccountSize > 0) {
         const newAccountSize = currentAccountSize + profit;
         accountSizeInput.value = formatNumber(newAccountSize);
-        calculatePosition();
+        
+        // Trigger input event to ensure shorthand conversion and recalculation
+        const inputEvent = new Event('input', { bubbles: true });
+        accountSizeInput.dispatchEvent(inputEvent);
     }
 }
 
@@ -301,7 +306,20 @@ elements.controls.themeSwitch.addEventListener('change', function() {
 
 elements.controls.addProfitButton.addEventListener('click', addProfitToAccount);
 
+// Modify the beforeunload event to avoid triggering on button clicks
+let isAddingProfit = false;
+
+elements.controls.addProfitButton.addEventListener('click', () => {
+    isAddingProfit = true;
+    addProfitToAccount(event);
+    setTimeout(() => {
+        isAddingProfit = false;
+    }, 100);
+});
+
 window.addEventListener('beforeunload', function(e) {
+    if (isAddingProfit) return; // Skip if we're just adding profit
+
     const hasEnteredData = Object.values(elements.inputs).some(input =>
         input.value !== '' && (input.id !== 'riskPercentage' || input.value !== '1')
     );
