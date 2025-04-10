@@ -251,7 +251,9 @@ function calculatePosition() {
     });
 }
 
-// NEW FUNCTION: Add profit to account size
+
+// This is the corrected addProfitToAccount function
+
 function addProfitToAccount() {
     // Get current account size and profit values
     const accountSizeInput = elements.inputs.accountSize;
@@ -264,9 +266,14 @@ function addProfitToAccount() {
     
     // Convert values to numbers - improved parsing
     const currentAccountSize = parseFloat(sanitizeInput(accountSizeInput.value)) || 0;
+    
     // Extract just the number from the currency string
-    const profitString = totalProfitText.replace(/[^0-9.-]/g, '');
+    // This properly handles "$300.00" to extract 300.00
+    const profitString = totalProfitText.replace(/[$,]/g, '');
     const profitValue = parseFloat(profitString) || 0;
+    
+    console.log("Current account size:", currentAccountSize);
+    console.log("Profit value:", profitValue);
     
     if (profitValue <= 0) {
         return;
@@ -274,6 +281,7 @@ function addProfitToAccount() {
     
     // Calculate new account size
     const newAccountSize = currentAccountSize + profitValue;
+    console.log("New account size:", newAccountSize);
     
     // Create a visual feedback animation
     const accountSizeElement = accountSizeInput;
