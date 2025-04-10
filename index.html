@@ -10,7 +10,7 @@
     <link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
-    <form id="calculatorForm" class="calculator-container" role="main" novalidate>
+    <form id="calculatorForm" class="calculator-container" role="main">
         <h1 class="calculator-title">Position Size & Risk Calculator</h1>
 
         <div class="theme-toggle-container">
@@ -122,7 +122,7 @@
                 <div class="result-card full-width five-r-card">
                     <div class="result-label">
                         5R Target Price
-                       六                        <span class="trim-tag">Trim Zone</span>
+                        <span class="trim-tag">Trim Zone</span>
                     </div>
                     <div id="fiveRTargetValue" class="result-value trim">-</div>
                 </div>
@@ -135,12 +135,18 @@
                             <div class="result-label">Profit per Share</div>
                             <div id="profitPerShareValue" class="result-value profit">-</div>
                         </div>
+                        
+                        <!-- CHANGE HERE: Modified Total Profit card to include the plus button -->
                         <div class="result-card">
-                            <div class="result-label">Total Profit
-                                <button type="button" id="addProfitButton" class="add-profit-button" aria-label="Add profit to account size">+</button>
+                            <div class="result-label">Total Profit</div>
+                            <div class="profit-container">
+                                <div id="totalProfitValue" class="result-value profit">-</div>
+                                <button type="button" id="addProfitButton" class="add-profit-button" aria-label="Add profit to account size" disabled>
+                                    <span class="add-icon">+</span>
+                                </button>
                             </div>
-                            <div id="totalProfitValue" class="result-value profit">-</div>
                         </div>
+                        
                         <div class="result-card">
                             <div class="result-label">Return on Investment</div>
                             <div id="roiValue" class="result-value profit">-</div>
@@ -177,10 +183,10 @@
             </ol>
         </div>
 
-<footer class="calculator-footer">
-    Made with <svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b6b"/></svg> by Skyler
-    <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
-</footer>
+        <footer class="calculator-footer">
+            Made with <svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b6b"/></svg> by Skyler
+            <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
+        </footer>
     </form>
 
     <script src="js/script.js" defer></script>
