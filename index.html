@@ -10,7 +10,7 @@
     <link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
-    <form id="calculatorForm" class="calculator-container" role="main">
+    <form id="calculatorForm" class="calculator-container" role="main" novalidate>
         <h1 class="calculator-title">Position Size & Risk Calculator</h1>
 
         <div class="theme-toggle-container">
@@ -122,7 +122,7 @@
                 <div class="result-card full-width five-r-card">
                     <div class="result-label">
                         5R Target Price
-                        <span class="trim-tag">Trim Zone</span>
+                       六                        <span class="trim-tag">Trim Zone</span>
                     </div>
                     <div id="fiveRTargetValue" class="result-value trim">-</div>
                 </div>
@@ -137,7 +137,7 @@
                         </div>
                         <div class="result-card">
                             <div class="result-label">Total Profit
-                                <button id="addProfitButton" class="add-profit-button" aria-label="Add profit to account size">+</button>
+                                <button type="button" id="addProfitButton" class="add-profit-button" aria-label="Add profit to account size">+</button>
                             </div>
                             <div id="totalProfitValue" class="result-value profit">-</div>
                         </div>
