@@ -517,11 +517,14 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     border-left: 3px solid var(--profit-color);
 }
 
-/* Add profit button styling */
+/* Updated CSS for the profit button and container - add to your styles.css */
+
+/* Profit container and button styling */
 .profit-container {
     display: flex;
     align-items: center;
     gap: 8px;
+    position: relative;
 }
 
 .add-profit-button {
@@ -532,37 +535,37 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     color: white;
     border: none;
     border-radius: 50%;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0.9;
     position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.add-profit-button:hover {
+.add-profit-button:hover:not([disabled]) {
     opacity: 1;
     transform: scale(1.1);
 }
 
+.add-profit-button.disabled,
 .add-profit-button:disabled {
-    opacity: 0.5;
-    cursor: default;
-    transform: none;
-    background-color: #6c757d; /* Gray out instead of showing "not allowed" cursor */
+    opacity: 0.5 !important;
+    cursor: default !important;
+    transform: none !important;
+    background-color: #6c757d !important; 
+    pointer-events: none;
 }
 
-.add-icon {
-    line-height: 1;
-    font-weight: bold;
-}
-
-/* Add tooltip to show what happens */
+/* Custom tooltip that works across browsers */
 .add-profit-button::after {
     content: attr(title);
     position: absolute;
-    bottom: -25px;
+    bottom: -30px;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.8);
@@ -578,9 +581,41 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     z-index: 10;
 }
 
-.add-profit-button:hover::after {
+.add-profit-button:not([disabled]):hover::after {
     opacity: 1;
     visibility: visible;
+}
+
+/* Make sure animation works in all browsers */
+@keyframes highlightField {
+    0% { background-color: transparent; }
+    30% { background-color: rgba(40, 167, 69, 0.2); }
+    100% { background-color: transparent; }
+}
+
+@-webkit-keyframes highlightField {
+    0% { background-color: transparent; }
+    30% { background-color: rgba(40, 167, 69, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.highlight-update {
+    animation: highlightField 1.5s ease;
+    -webkit-animation: highlightField 1.5s ease;
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+    .add-profit-button {
+        width: 28px; /* Slightly larger for touch targets */
+        height: 28px;
+    }
+    
+    .add-profit-button::after {
+        bottom: -25px;
+        font-size: 10px;
+        padding: 3px 6px;
+    }
 }
 
 /* Animation for highlighting account size update */
