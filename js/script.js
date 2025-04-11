@@ -13,7 +13,6 @@ const elements = {
         percentOfAccount: document.getElementById('percentOfAccountValue'),
         rMultiple: document.getElementById('rMultipleValue'),
         fiveRTarget: document.getElementById('fiveRTargetValue'),
-        // New profit section elements
         profitSection: document.getElementById('profitSection'),
         profitPerShare: document.getElementById('profitPerShareValue'),
         totalProfit: document.getElementById('totalProfitValue'),
@@ -31,7 +30,6 @@ const elements = {
         infoIcon: document.getElementById('infoIcon'),
         infoContent: document.getElementById('infoContent'),
         themeSwitch: document.getElementById('theme-switch'),
-        // NEW: Add profit button
         addProfitButton: document.getElementById('addProfitButton')
     }
 };
@@ -42,7 +40,7 @@ const defaults = {
     rMultipleEmpty: '- R'
 };
 
-// Utility Functions
+// Formatters
 function formatCurrency(value) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -60,6 +58,7 @@ function formatPercentage(value) {
     return `${value.toFixed(2)}%`;
 }
 
+// Helpers
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -72,7 +71,6 @@ function sanitizeInput(value) {
     return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 }
 
-// Convert shorthand notation (K for thousands)
 function convertKShorthand(inputValue) {
     const cleanValue = inputValue.replace(/,/g, '');
     const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
@@ -85,35 +83,31 @@ function convertKShorthand(inputValue) {
     return parseFloat(cleanValue);
 }
 
-// Handle shorthand conversion in real-time
 function setupShorthandConversion(input) {
-    let isConverting = false; // Flag to prevent infinite loops
+    let isConverting = false;
 
-    input.addEventListener('input', function() {
-        if (isConverting) return; // Prevent re-triggering during conversion
+    input.addEventListener('input', function () {
+        if (isConverting) return;
 
-        const cursorPosition = this.selectionStart; // Save cursor position
+        const cursorPosition = this.selectionStart;
         const originalLength = this.value.length;
 
         const convertedValue = convertKShorthand(this.value);
         if (!isNaN(convertedValue)) {
-            isConverting = true; // Set flag to prevent loop
-            this.value = formatNumber(convertedValue); // Update value with formatted number
+            isConverting = true;
+            this.value = formatNumber(convertedValue);
 
-            // Adjust cursor position after conversion
             const newLength = this.value.length;
-            const cursorAdjustment = newLength - originalLength;
-            const newCursorPosition = cursorPosition + cursorAdjustment;
+            const newCursorPosition = cursorPosition + (newLength - originalLength);
             this.setSelectionRange(newCursorPosition, newCursorPosition);
 
-            isConverting = false; // Reset flag
+            isConverting = false;
         }
 
-        debouncedCalculate(); // Trigger calculation
+        debouncedCalculate();
     });
 }
 
-// Validation and Error Handling
 function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
     const errors = [];
     const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
@@ -124,20 +118,21 @@ function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, r
         if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
         if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
 
-        if (stopLossPrice > 0 && entryPrice > 0 && stopLossPrice >= entryPrice) {
+        if (stopLossPrice >= entryPrice) {
             errors.push({
                 element: elements.errors.stopLoss,
                 message: 'Stop loss must be below entry price'
             });
         }
 
-        if (targetPrice > 0 && entryPrice > 0 && targetPrice <= entryPrice) {
+        if (targetPrice > 0 && targetPrice <= entryPrice) {
             errors.push({
                 element: elements.errors.targetPrice,
                 message: 'Target price should be above entry price'
             });
         }
     }
+
     return errors;
 }
 
@@ -146,6 +141,7 @@ function displayErrors(errors) {
         error.textContent = '';
         error.classList.add('hidden');
     });
+
     errors.forEach(({ element, message }) => {
         if (element.tagName === 'INPUT') return;
         element.textContent = message;
@@ -161,20 +157,15 @@ function resetResults() {
         elements.results.percentOfAccount.textContent = defaults.emptyResult;
         elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
         elements.results.fiveRTarget.textContent = defaults.emptyResult;
-        
-        // Hide and reset profit section
+
         elements.results.profitSection.classList.add('hidden');
         elements.results.profitPerShare.textContent = defaults.emptyResult;
         elements.results.totalProfit.textContent = defaults.emptyResult;
         elements.results.roi.textContent = defaults.emptyResult;
         elements.results.riskReward.textContent = defaults.emptyResult;
-        
-        // NEW: Update add profit button state
-        updateAddProfitButtonState();
     });
 }
 
-// Core Calculation
 function calculatePosition() {
     const values = {
         accountSize: parseFloat(sanitizeInput(elements.inputs.accountSize.value)) || 0,
@@ -188,12 +179,10 @@ function calculatePosition() {
     displayErrors(errors);
 
     const hasMeaningfulData = values.accountSize > 0 || values.entryPrice > 0 || values.stopLossPrice > 0 || values.targetPrice > 0;
-    if (!hasMeaningfulData) {
+    if (!hasMeaningfulData || errors.length > 0) {
         resetResults();
         return;
     }
-
-    if (errors.length > 0) return resetResults();
 
     const riskPerShare = Math.abs(values.entryPrice - values.stopLossPrice);
     const dollarRiskAmount = (values.accountSize * values.riskPercentage) / 100;
@@ -211,38 +200,25 @@ function calculatePosition() {
         fiveRTarget: formatCurrency(values.entryPrice + (5 * riskPerShare))
     };
 
-    // Calculate profit metrics if target price is specified
-    const hasValidTargetPrice = values.targetPrice > values.entryPrice;
-    
-    if (hasValidTargetPrice) {
+    if (values.targetPrice > values.entryPrice) {
         const profitPerShare = values.targetPrice - values.entryPrice;
         const totalProfit = profitPerShare * shares;
         const roi = (totalProfit / positionSize) * 100;
         const riskReward = totalProfit / (shares * riskPerShare);
-        
-        // Add profit results
+
         Object.assign(results, {
             profitPerShare: formatCurrency(profitPerShare),
             totalProfit: formatCurrency(totalProfit),
             roi: formatPercentage(roi),
             riskReward: riskReward.toFixed(2)
         });
-        
-        // Show profit section
+
         elements.results.profitSection.classList.remove('hidden');
-        
-        // NEW: Update add profit button state
-        updateAddProfitButtonState();
     } else {
-        // Hide profit section if no target price
         elements.results.profitSection.classList.add('hidden');
-        
-        // NEW: Update add profit button state
-        updateAddProfitButtonState();
     }
 
     requestAnimationFrame(() => {
-        // Update all result elements
         Object.entries(results).forEach(([key, value]) => {
             if (elements.results[key]) {
                 elements.results[key].textContent = value;
@@ -251,89 +227,14 @@ function calculatePosition() {
     });
 }
 
-// Updated function for better cross-browser compatibility
-function updateAddProfitButtonState() {
-    const totalProfitText = elements.results.totalProfit.textContent;
-    
-    // Check if there's a valid profit value (not empty, not negative, not zero)
-    let hasProfit = false;
-    
-    if (totalProfitText !== defaults.emptyResult) {
-        // Extract the numeric value from the currency string
-        const profitString = totalProfitText.replace(/[$,]/g, '');
-        const profitValue = parseFloat(profitString) || 0;
-        
-        // Only enable if profit is positive
-        hasProfit = profitValue > 0;
-    }
-    
-    // Force update the disabled state explicitly for cross-browser compatibility
-    if (hasProfit) {
-        elements.controls.addProfitButton.disabled = false;
-        elements.controls.addProfitButton.classList.remove('disabled');
-        elements.controls.addProfitButton.title = "Add profit to account size";
-        elements.controls.addProfitButton.style.cursor = "pointer";
-        elements.controls.addProfitButton.style.backgroundColor = "var(--profit-color)";
-        elements.controls.addProfitButton.style.opacity = "0.9";
-    } else {
-        elements.controls.addProfitButton.disabled = true;
-        elements.controls.addProfitButton.classList.add('disabled');
-        elements.controls.addProfitButton.title = "";
-        elements.controls.addProfitButton.style.cursor = "default";
-        elements.controls.addProfitButton.style.backgroundColor = "#6c757d";
-        elements.controls.addProfitButton.style.opacity = "0.5";
-    }
-}
-
-// Updated function with better number parsing
-function addProfitToAccount() {
-    // Get current account size and profit values
-    const accountSizeInput = elements.inputs.accountSize;
-    const totalProfitText = elements.results.totalProfit.textContent;
-    
-    // If either is not available, do nothing
-    if (accountSizeInput.value === '' || totalProfitText === defaults.emptyResult) {
-        return;
-    }
-    
-    // Convert values to numbers with improved parsing
-    const currentAccountSize = parseFloat(sanitizeInput(accountSizeInput.value)) || 0;
-    
-    // More robust profit extraction - handle commas and currency signs
-    const profitString = totalProfitText.replace(/[$,]/g, '');
-    const profitValue = parseFloat(profitString) || 0;
-    
-    console.log("Current account size:", currentAccountSize);
-    console.log("Profit value:", profitValue);
-    console.log("Profit string extracted:", profitString);
-    
-    if (profitValue <= 0) {
-        console.log("Profit value is not positive, skipping");
-        return;
-    }
-    
-    // Calculate new account size
-    const newAccountSize = currentAccountSize + profitValue;
-    console.log("New account size:", newAccountSize);
-    
-    // Create a visual feedback animation
-    const accountSizeElement = accountSizeInput;
-    accountSizeElement.classList.add('highlight-update');
-    setTimeout(() => accountSizeElement.classList.remove('highlight-update'), 1500);
-    
-    // Update account size input with formatted value
-    accountSizeInput.value = formatNumber(newAccountSize);
-    
-    // Recalculate everything with the new account size
-    calculatePosition();
-}
+// Debounced calculation
+const debouncedCalculate = debounce(calculatePosition, 250);
 
 // Event Listeners
-// Remove the old blur event listener for accountSize and use the new function
 setupShorthandConversion(elements.inputs.accountSize);
 
 elements.controls.riskButtons.forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         const value = parseFloat(this.getAttribute('data-value'));
         elements.inputs.riskPercentage.value = value;
         elements.controls.riskButtons.forEach(btn => btn.classList.remove('active'));
@@ -342,7 +243,7 @@ elements.controls.riskButtons.forEach(button => {
     });
 });
 
-elements.inputs.riskPercentage.addEventListener('input', function() {
+elements.inputs.riskPercentage.addEventListener('input', function () {
     const value = parseFloat(this.value);
     elements.controls.riskButtons.forEach(btn => {
         btn.classList.toggle('active', parseFloat(btn.getAttribute('data-value')) === value);
@@ -350,10 +251,6 @@ elements.inputs.riskPercentage.addEventListener('input', function() {
     debouncedCalculate();
 });
 
-// NEW: Add event listener for add profit button
-elements.controls.addProfitButton.addEventListener('click', addProfitToAccount);
-
-const debouncedCalculate = debounce(calculatePosition, 250);
 Object.values(elements.inputs).forEach(input => {
     if (input !== elements.inputs.accountSize) {
         input.addEventListener('input', debouncedCalculate);
@@ -370,19 +267,19 @@ elements.controls.clearButton.addEventListener('click', () => {
     displayErrors([]);
 });
 
-elements.controls.infoButton.addEventListener('click', function() {
+elements.controls.infoButton.addEventListener('click', function () {
     const isHidden = elements.controls.infoContent.classList.toggle('hidden');
     elements.controls.infoIcon.textContent = isHidden ? '+' : '−';
     this.setAttribute('aria-expanded', !isHidden);
     elements.controls.infoContent.setAttribute('aria-expanded', !isHidden);
 });
 
-elements.controls.themeSwitch.addEventListener('change', function() {
+elements.controls.themeSwitch.addEventListener('change', function () {
     document.body.classList.toggle('dark-mode', this.checked);
     localStorage.setItem('theme', this.checked ? 'dark' : 'light');
 });
 
-window.addEventListener('beforeunload', function(e) {
+window.addEventListener('beforeunload', function (e) {
     const hasEnteredData = Object.values(elements.inputs).some(input =>
         input.value !== '' && (input.id !== 'riskPercentage' || input.value !== '1')
     );
@@ -393,12 +290,26 @@ window.addEventListener('beforeunload', function(e) {
     }
 });
 
-// Initialization
 function initializeTheme() {
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
         elements.controls.themeSwitch.checked = true;
     }
+}
+
+// 🔥 NEW: Add Total Profit to Account Size
+if (elements.controls.addProfitButton) {
+    elements.controls.addProfitButton.addEventListener('click', () => {
+        const profitText = elements.results.totalProfit.textContent.replace(/[^0-9.-]+/g, '');
+        const accountText = sanitizeInput(elements.inputs.accountSize.value);
+        const profit = parseFloat(profitText);
+        const account = parseFloat(accountText);
+        if (!isNaN(profit) && !isNaN(account)) {
+            const newAccountSize = account + profit;
+            elements.inputs.accountSize.value = formatNumber(newAccountSize);
+            debouncedCalculate();
+        }
+    });
 }
 
 initializeTheme();
