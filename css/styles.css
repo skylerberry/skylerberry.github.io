@@ -33,19 +33,19 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: var(--spacing-md);
 }
 
 .calculator-container {
     max-width: 800px;
     width: 94%;
+    max-height: 98vh;
+    overflow: auto;
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
     padding: var(--spacing-md);
     margin: 10px;
-    /* Removed max-height and overflow properties to prevent scrollbar */
-    contain: content;
+    contain: layout style;
     -ms-overflow-style: thin;
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
@@ -64,7 +64,7 @@ body {
     font-size: 20px;
     font-weight: bold;
     text-align: center;
-    margin: 0 0 var(--spacing-sm) 0;
+    margin: 0 0 var(--spacing-lg) 0;
     color: var(--theme-color);
 }
 
@@ -79,12 +79,12 @@ body {
     font-weight: 600;
     border-bottom: 1px solid #e5e7eb;
     padding-bottom: 6px;
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-sm);
     color: var(--theme-color);
 }
 
 .input-group {
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-md);
 }
 
 .input-label {
@@ -184,7 +184,7 @@ body {
 
 .clear-button {
     display: block;
-    margin: var(--spacing-sm) auto;
+    margin: var(--spacing-md) auto;
     background-color: #f3f4f6;
     color: var(--text-primary);
     border: 1px solid #d1d5db;
@@ -196,7 +196,7 @@ body {
 }
 
 .results-section {
-    margin-top: var(--spacing-sm);
+    margin-top: var(--spacing-md);
     padding: var(--spacing-md);
     background-color: rgba(28, 161, 242, 0.1);
     border-radius: 8px;
@@ -207,19 +207,19 @@ body {
     font-weight: 600;
     border-bottom: 1px solid rgba(28, 161, 242, 0.3);
     padding-bottom: 6px;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
     color: var(--theme-color);
 }
 
 .results-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: var(--spacing-md);
 }
 
 .result-card {
     background-color: white;
-    padding: 8px 10px;
+    padding: 10px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
     border-left: 3px solid var(--theme-color);
@@ -240,13 +240,13 @@ body {
 }
 
 .result-value {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: var(--theme-color);
 }
 
 .result-value.large {
-    font-size: 20px;
+    font-size: 22px;
 }
 
 .result-value.trim {
@@ -274,7 +274,7 @@ body {
     padding: 0;
     cursor: pointer;
     font-size: 13px;
-    margin-top: var(--spacing-sm);
+    margin-top: var(--spacing-md);
 }
 
 .info-icon {
@@ -301,8 +301,8 @@ body {
     text-align: center;
     font-size: 12px;
     color: var(--text-secondary);
-    margin-top: var(--spacing-sm);
-    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
     border-top: 1px solid #e5e7eb;
     line-height: 1.4;
     display: flex;
@@ -324,8 +324,10 @@ body {
 @media (max-width: 640px) {
     .calculator-container {
         padding: var(--spacing-md);
+        max-height: 100%;
         width: 100%;
         margin: 0;
+        border-radius: 0;
     }
 
     .grid, .results-grid {
@@ -341,7 +343,7 @@ body {
 .theme-toggle-container {
     display: flex;
     justify-content: center;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
 }
 
 .theme-toggle {
@@ -483,11 +485,11 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
     fill: #ff6b6b;
 }
 
-/* Profit Section Styles */
+/* Profit Section */
 .profit-section {
-    margin-top: 8px;
+    margin-top: var(--spacing-md);
     border-top: 1px solid rgba(28, 161, 242, 0.3);
-    padding-top: 8px;
+    padding-top: var(--spacing-md);
 }
 
 .profit-section.hidden {
@@ -497,152 +499,59 @@ body.dark-mode .calculator-container::-webkit-scrollbar-thumb {
 .profit-title {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-md);
     color: var(--theme-color);
 }
 
 .profit-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: var(--spacing-md);
 }
 
-/* Profit value styling */
 .result-value.profit {
     color: var(--profit-color);
 }
 
-/* Profit card border */
 .result-card.profit-card {
     border-left: 3px solid var(--profit-color);
 }
 
-/* Updated CSS for the profit button and container - add to your styles.css */
-
-/* Profit container and button styling */
-.profit-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-}
-
-.add-profit-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--profit-color);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    opacity: 0.9;
-    position: relative;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.add-profit-button:hover:not([disabled]) {
-    opacity: 1;
-    transform: scale(1.1);
-}
-
-.add-profit-button.disabled,
-.add-profit-button:disabled {
-    opacity: 0.5 !important;
-    cursor: default !important;
-    transform: none !important;
-    background-color: #6c757d !important; 
-    pointer-events: none;
-}
-
-/* Custom tooltip that works across browsers */
-.add-profit-button::after {
-    content: attr(title);
-    position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s ease;
-    pointer-events: none;
-    z-index: 10;
-}
-
-.add-profit-button:not([disabled]):hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Make sure animation works in all browsers */
-@keyframes highlightField {
-    0% { background-color: transparent; }
-    30% { background-color: rgba(40, 167, 69, 0.2); }
-    100% { background-color: transparent; }
-}
-
-@-webkit-keyframes highlightField {
-    0% { background-color: transparent; }
-    30% { background-color: rgba(40, 167, 69, 0.2); }
-    100% { background-color: transparent; }
-}
-
-.highlight-update {
-    animation: highlightField 1.5s ease;
-    -webkit-animation: highlightField 1.5s ease;
-}
-
-/* Mobile tweaks */
-@media (max-width: 640px) {
-    .add-profit-button {
-        width: 28px; /* Slightly larger for touch targets */
-        height: 28px;
-    }
-    
-    .add-profit-button::after {
-        bottom: -25px;
-        font-size: 10px;
-        padding: 3px 6px;
-    }
-}
-
-/* Animation for highlighting account size update */
-@keyframes highlightField {
-    0% { background-color: transparent; }
-    30% { background-color: rgba(40, 167, 69, 0.2); }
-    100% { background-color: transparent; }
-}
-
-.highlight-update {
-    animation: highlightField 1.5s ease;
-}
-
-/* Dark mode support for profit values */
-body.dark-mode {
-    --profit-color: #5cb85c;
-}
-
-/* Mobile responsiveness for profit section */
 @media (max-width: 640px) {
     .profit-grid {
         grid-template-columns: 1fr;
     }
-    
-    .add-profit-button::after {
-        bottom: -25px;
-        font-size: 10px;
-        padding: 3px 6px;
-    }
+}
+
+/* 💸 Add Profit Button Styles */
+.profit-with-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.add-profit-button {
+    background-color: var(--profit-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.add-profit-button:hover {
+    background-color: #218838;
+}
+
+.add-profit-button:active {
+    transform: scale(0.95);
+}
+
+body.dark-mode .add-profit-button {
+    background-color: var(--profit-color);
+    color: white;
 }
