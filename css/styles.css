@@ -15,6 +15,54 @@
     --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
 }
 
+/* FIX FOR DOUBLE SCROLLING ISSUE */
+html, body {
+    height: 100%; /* Use 100% instead of 100vh to avoid mobile viewport issues */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent body scrolling */
+}
+
+/* Keep the background and flexbox centering for the main container */
+body {
+    background: linear-gradient(135deg, #ffffff 0%, #e6f3ff 50%, #c2e5ff 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modify the calculator container to be the only scrollable element */
+.calculator-container {
+    max-width: 800px;
+    width: 94%;
+    height: 100%; /* Take full height */
+    max-height: 100vh; /* Maximum is the full viewport height */
+    overflow-y: auto; /* Allow vertical scrolling */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-md);
+    contain: layout style;
+    -ms-overflow-style: thin;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+    
+    /* Add padding to avoid content being cut off by mobile browser UI */
+    padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Keep the border radius at the top even in mobile view */
+@media (max-width: 640px) {
+    .calculator-container {
+        width: 100%;
+        max-height: 100%;
+        margin: 0;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+}
+
+/* ORIGINAL CSS BELOW */
 html {
     line-height: 1.15;
     -webkit-text-size-adjust: 100%;
@@ -27,15 +75,17 @@ html {
     padding: 0;
 }
 
-body {
+/* Remove these properties as they're now handled by the fix above */
+/* body {
     background: linear-gradient(135deg, #ffffff 0%, #e6f3ff 50%, #c2e5ff 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-}
+} */
 
-.calculator-container {
+/* Remove these properties as they're now handled by the fix above */
+/* .calculator-container {
     max-width: 800px;
     width: 94%;
     max-height: 98vh;
@@ -49,7 +99,7 @@ body {
     -ms-overflow-style: thin;
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
-}
+} */
 
 .calculator-container::-webkit-scrollbar {
     width: 6px;
@@ -321,14 +371,15 @@ body {
     text-decoration: none;
 }
 
+/* Update the media query to match our new changes */
 @media (max-width: 640px) {
-    .calculator-container {
+    /* .calculator-container {
         padding: var(--spacing-md);
         max-height: 100%;
         width: 100%;
         margin: 0;
         border-radius: 0;
-    }
+    } */
 
     .grid, .results-grid {
         grid-template-columns: 1fr;
