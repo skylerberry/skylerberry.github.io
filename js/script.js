@@ -13,8 +13,6 @@ const elements = {
         percentOfAccount: document.getElementById('percentOfAccountValue'),
         rMultiple: document.getElementById('rMultipleValue'),
         fiveRTarget: document.getElementById('fiveRTargetValue'),
-        // New profit section elements
-        profitSection: document.getElementById('profitSection'),
         profitPerShare: document.getElementById('profitPerShareValue'),
         totalProfit: document.getElementById('totalProfitValue'),
         roi: document.getElementById('roiValue'),
@@ -25,20 +23,15 @@ const elements = {
         targetPrice: document.getElementById('targetPriceError')
     },
     controls: {
-        riskButtons: document.querySelectorAll('.risk-button'),
-        clearButton: document.getElementById('clearButton'),
-        infoButton: document.getElementById('infoButton'),
-        infoIcon: document.getElementById('infoIcon'),
-        infoContent: document.getElementById('infoContent'),
-        themeSwitch: document.getElementById('theme-switch'),
-        addProfitButton: document.getElementById('addProfitButton') // new
+        steps: document.querySelectorAll('.step'),
+        calculateButton: document.getElementById('calculateButton'),
+        themeSwitch: document.getElementById('theme-switch')
     }
 };
 
 const defaults = {
     riskPercentage: 1,
-    emptyResult: '-',
-    rMultipleEmpty: '- R'
+    emptyResult: '-'
 };
 
 // Utility Functions
@@ -71,7 +64,6 @@ function sanitizeInput(value) {
     return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 }
 
-// Convert shorthand notation (K for thousands)
 function convertKShorthand(inputValue) {
     const cleanValue = inputValue.replace(/,/g, '');
     const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
@@ -153,19 +145,12 @@ function displayErrors(errors) {
 
 function resetResults() {
     requestAnimationFrame(() => {
-        elements.results.shares.textContent = defaults.emptyResult;
-        elements.results.positionSize.textContent = defaults.emptyResult;
-        elements.results.totalRisk.textContent = defaults.emptyResult;
-        elements.results.percentOfAccount.textContent = defaults.emptyResult;
-        elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
+        Object.values(elements.results).forEach(result => {
+            result.textContent = defaults.emptyResult;
+        });
+        elements.results.rMultiple.textContent = '- R';
         elements.results.fiveRTarget.textContent = defaults.emptyResult;
-
-        // Hide and reset profit section
         elements.results.profitSection.classList.add('hidden');
-        elements.results.profitPerShare.textContent = defaults.emptyResult;
-        elements.results.totalProfit.textContent = defaults.emptyResult;
-        elements.results.roi.textContent = defaults.emptyResult;
-        elements.results.riskReward.textContent = defaults.emptyResult;
     });
 }
 
@@ -202,7 +187,7 @@ function calculatePosition() {
         percentOfAccount: formatPercentage((positionSize / values.accountSize) * 100),
         rMultiple: values.targetPrice > values.entryPrice
             ? `${((values.targetPrice - values.entryPrice) / riskPerShare).toFixed(2)} R`
-            : defaults.rMultipleEmpty,
+            : '- R',
         fiveRTarget: formatCurrency(values.entryPrice + (5 * riskPerShare))
     };
 
@@ -243,24 +228,10 @@ const debouncedCalculate = debounce(calculatePosition, 250);
 setupShorthandConversion(elements.inputs.accountSize);
 
 // Risk button quick selects
-elements.controls.riskButtons.forEach(button => {
-    button.addEventListener('click', function () {
-        const value = parseFloat(this.getAttribute('data-value'));
-        elements.inputs.riskPercentage.value = value;
-        elements.controls.riskButtons.forEach(btn => btn.classList.remove('active'));
-        this.classList.add('active');
-        debouncedCalculate();
-    });
-});
+elements.controls.calculateButton.addEventListener('click', debouncedCalculate);
 
 // Manual percentage entry
-elements.inputs.riskPercentage.addEventListener('input', function () {
-    const value = parseFloat(this.value);
-    elements.controls.riskButtons.forEach(btn => {
-        btn.classList.toggle('active', parseFloat(btn.getAttribute('data-value')) === value);
-    });
-    debouncedCalculate();
-});
+elements.inputs.riskPercentage.addEventListener('input', debouncedCalculate);
 
 // All other inputs except accountSize
 Object.values(elements.inputs).forEach(input => {
@@ -273,19 +244,8 @@ Object.values(elements.inputs).forEach(input => {
 elements.controls.clearButton.addEventListener('click', () => {
     Object.values(elements.inputs).forEach(input => input.value = '');
     elements.inputs.riskPercentage.value = defaults.riskPercentage;
-    elements.controls.riskButtons.forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-value') === '1');
-    });
     resetResults();
     displayErrors([]);
-});
-
-// Info toggle
-elements.controls.infoButton.addEventListener('click', function () {
-    const isHidden = elements.controls.infoContent.classList.toggle('hidden');
-    elements.controls.infoIcon.textContent = isHidden ? '+' : '−';
-    this.setAttribute('aria-expanded', !isHidden);
-    elements.controls.infoContent.setAttribute('aria-expanded', !isHidden);
 });
 
 // Theme switch
@@ -293,21 +253,6 @@ elements.controls.themeSwitch.addEventListener('change', function () {
     document.body.classList.toggle('dark-mode', this.checked);
     localStorage.setItem('theme', this.checked ? 'dark' : 'light');
 });
-
-// Add Profit ➕ to Account
-if (elements.controls.addProfitButton) {
-    elements.controls.addProfitButton.addEventListener('click', () => {
-        const profitText = elements.results.totalProfit.textContent.replace(/[^0-9.-]+/g, '');
-        const accountText = sanitizeInput(elements.inputs.accountSize.value);
-        const profit = parseFloat(profitText);
-        const account = parseFloat(accountText);
-        if (!isNaN(profit) && !isNaN(account)) {
-            const newAccountSize = account + profit;
-            elements.inputs.accountSize.value = formatNumber(newAccountSize);
-            debouncedCalculate();
-        }
-    });
-}
 
 // Warn on exit with data
 window.addEventListener('beforeunload', function (e) {
