@@ -1,193 +1,456 @@
-// Parse k/m notation
-function parseAccountSize(value) {
-    if (!value) return 0;
-    
-    // Remove all non-numeric characters except k, m, and decimal point
-    let cleanValue = value.toLowerCase().replace(/[^0-9km.]/g, '');
-    
-    // Check for k or m suffix
-    if (cleanValue.endsWith('k')) {
-        return parseFloat(cleanValue.slice(0, -1)) * 1000;
-    } else if (cleanValue.endsWith('m')) {
-        return parseFloat(cleanValue.slice(0, -1)) * 1000000;
-    } else {
-        return parseFloat(cleanValue) || 0;
+const elements = {
+    inputs: {
+        accountSize: document.getElementById('accountSize'),
+        riskPercentage: document.getElementById('riskPercentage'),
+        entryPrice: document.getElementById('entryPrice'),
+        stopLossPrice: document.getElementById('stopLossPrice'),
+        targetPrice: document.getElementById('targetPrice')
+    },
+    results: {
+        shares: document.getElementById('sharesValue'),
+        positionSize: document.getElementById('positionSizeValue'),
+        totalRisk: document.getElementById('totalRiskValue'),
+        percentOfAccount: document.getElementById('percentOfAccountValue'),
+        rMultiple: document.getElementById('rMultipleValue'),
+        fiveRTarget: document.getElementById('fiveRTargetValue'),
+        // New profit section elements
+        profitSection: document.getElementById('profitSection'),
+        profitPerShare: document.getElementById('profitPerShareValue'),
+        totalProfit: document.getElementById('totalProfitValue'),
+        roi: document.getElementById('roiValue'),
+        riskReward: document.getElementById('riskRewardValue')
+    },
+    errors: {
+        stopLoss: document.getElementById('stopLossError'),
+        targetPrice: document.getElementById('targetPriceError')
+    },
+    controls: {
+        riskButtons: document.querySelectorAll('.risk-button'),
+        clearButton: document.getElementById('clearButton'),
+        infoButton: document.getElementById('infoButton'),
+        infoIcon: document.getElementById('infoIcon'),
+        infoContent: document.getElementById('infoContent'),
+        themeSwitch: document.getElementById('theme-switch'),
+        addProfitButton: document.getElementById('addProfitButton') // new
     }
+};
+
+const defaults = {
+    riskPercentage: 1,
+    emptyResult: '-',
+    rMultipleEmpty: '- R'
+};
+
+// Utility Functions
+function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(value);
 }
 
-// Format number with commas
-function formatNumber(num) {
-    return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function formatNumber(value) {
+    return new Intl.NumberFormat('en-US').format(value);
 }
 
-// Format currency
-function formatCurrency(num) {
-    if (num >= 1000000) {
-        return '$' + (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 10000) {
-        return '$' + Math.round(num / 1000).toLocaleString() + 'K';
-    }
-    return '$' + formatNumber(Math.round(num));
+function formatPercentage(value) {
+    return `${value.toFixed(2)}%`;
 }
 
-// Handle input formatting for accountSize
-document.getElementById('accountSize').addEventListener('input', function(e) {
-    const input = e.target;
-    const cursorPosition = input.selectionStart;
-    const originalLength = input.value.length;
-    
-    // Parse the input value
-    let value = input.value.replace(/,/g, ''); // Remove existing commas
-    const parsedValue = parseAccountSize(value);
-    
-    if (parsedValue) {
-        // Format with commas
-        const formattedValue = formatNumber(parsedValue);
-        
-        // Calculate cursor adjustment due to comma insertion
-        const newLength = formattedValue.length;
-        const commasAdded = (formattedValue.match(/,/g) || []).length;
-        const commasBeforeCursor = (input.value.slice(0, cursorPosition).match(/,/g) || []).length;
-        const cursorAdjustment = (newLength - originalLength) - (commasAdded - commasBeforeCursor);
-        
-        // Update input value
-        input.value = formattedValue;
-        
-        // Restore cursor position
-        input.selectionStart = input.selectionEnd = cursorPosition + cursorAdjustment;
-    }
-    
-    // Trigger calculation
-    calculatePosition();
-});
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
 
-// Handle risk preset buttons
-document.querySelectorAll('.risk-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        document.getElementById('riskPercentage').value = this.dataset.risk;
-        calculatePosition();
+function sanitizeInput(value) {
+    return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+}
+
+// Convert shorthand notation (K for thousands)
+function convertKShorthand(inputValue) {
+    const cleanValue = inputValue.replace(/,/g, '');
+    const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
+    if (kMatch) {
+        const numberPart = parseFloat(kMatch[1]);
+        if (!isNaN(numberPart)) {
+            return numberPart * 1000;
+        }
+    }
+    return parseFloat(cleanValue);
+}
+
+// Handle shorthand conversion in real-time
+function setupShorthandConversion(input) {
+    let isConverting = false;
+
+    input.addEventListener('input', function () {
+        if (isConverting) return;
+
+        const cursorPosition = this.selectionStart;
+        const originalLength = this.value.length;
+
+        const convertedValue = convertKShorthand(this.value);
+        if (!isNaN(convertedValue)) {
+            isConverting = true;
+            this.value = formatNumber(convertedValue);
+
+            const newLength = this.value.length;
+            const newCursorPosition = cursorPosition + (newLength - originalLength);
+            this.setSelectionRange(newCursorPosition, newCursorPosition);
+
+            isConverting = false;
+        }
+
+        debouncedCalculate();
     });
-});
+}
 
-// Auto-calculate on input change (excluding accountSize to avoid duplicate events)
-document.querySelectorAll('input:not(#accountSize)').forEach(input => {
-    input.addEventListener('input', calculatePosition);
-});
+// Validation and Error Handling
+function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
+    const errors = [];
+    const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
 
+    if (hasData) {
+        if (accountSize <= 0) errors.push({ element: elements.inputs.accountSize, message: 'Account size must be positive' });
+        if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
+        if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
+        if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
+
+        if (stopLossPrice > 0 && entryPrice > 0 && stopLossPrice >= entryPrice) {
+            errors.push({const elements = {
+    inputs: {
+        accountSize: document.getElementById('accountSize'),
+        riskPercentage: document.getElementById('riskPercentage'),
+        entryPrice: document.getElementById('entryPrice'),
+        stopLossPrice: document.getElementById('stopLossPrice'),
+        targetPrice: document.getElementById('targetPrice')
+    },
+    results: {
+        shares: document.getElementById('sharesValue'),
+        positionSize: document.getElementById('positionSizeValue'),
+        totalRisk: document.getElementById('totalRiskValue'),
+        percentOfAccount: document.getElementById('percentOfAccountValue'),
+        rMultiple: document.getElementById('rMultipleValue'),
+        fiveRTarget: document.getElementById('fiveRTargetValue'),
+        // New profit section elements
+        profitSection: document.getElementById('profitSection'),
+        profitPerShare: document.getElementById('profitPerShareValue'),
+        totalProfit: document.getElementById('totalProfitValue'),
+        roi: document.getElementById('roiValue'),
+        riskReward: document.getElementById('riskRewardValue')
+    },
+    errors: {
+        stopLoss: document.getElementById('stopLossError'),
+        targetPrice: document.getElementById('targetPriceError')
+    },
+    controls: {
+        riskButtons: document.querySelectorAll('.risk-button'),
+        clearButton: document.getElementById('clearButton'),
+        infoButton: document.getElementById('infoButton'),
+        infoIcon: document.getElementById('infoIcon'),
+        infoContent: document.getElementById('infoContent'),
+        themeSwitch: document.getElementById('theme-switch'),
+        addProfitButton: document.getElementById('addProfitButton') // new
+    }
+};
+
+const defaults = {
+    riskPercentage: 1,
+    emptyResult: '-',
+    rMultipleEmpty: '- R'
+};
+
+// Utility Functions
+function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(value);
+}
+
+function formatNumber(value) {
+    return new Intl.NumberFormat('en-US').format(value);
+}
+
+function formatPercentage(value) {
+    return `${value.toFixed(2)}%`;
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
+function sanitizeInput(value) {
+    return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+}
+
+// Convert shorthand notation (K for thousands)
+function convertKShorthand(inputValue) {
+    const cleanValue = inputValue.replace(/,/g, '');
+    const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
+    if (kMatch) {
+        const numberPart = parseFloat(kMatch[1]);
+        if (!isNaN(numberPart)) {
+            return numberPart * 1000;
+        }
+    }
+    return parseFloat(cleanValue);
+}
+
+// Handle shorthand conversion in real-time
+function setupShorthandConversion(input) {
+    let isConverting = false;
+
+    input.addEventListener('input', function () {
+        if (isConverting) return;
+
+        const cursorPosition = this.selectionStart;
+        const originalLength = this.value.length;
+
+        const convertedValue = convertKShorthand(this.value);
+        if (!isNaN(convertedValue)) {
+            isConverting = true;
+            this.value = formatNumber(convertedValue);
+
+            const newLength = this.value.length;
+            const newCursorPosition = cursorPosition + (newLength - originalLength);
+            this.setSelectionRange(newCursorPosition, newCursorPosition);
+
+            isConverting = false;
+        }
+
+        debouncedCalculate();
+    });
+}
+
+// Validation and Error Handling
+function validateInputs({ accountSize, entryPrice, stopLossPrice, targetPrice, riskPercentage }) {
+    const errors = [];
+    const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
+
+    if (hasData) {
+        if (accountSize <= 0) errors.push({ element: elements.inputs.accountSize, message: 'Account size must be positive' });
+        if (entryPrice <= 0) errors.push({ element: elements.inputs.entryPrice, message: 'Entry price must be positive' });
+        if (stopLossPrice <= 0) errors.push({ element: elements.inputs.stopLossPrice, message: 'Stop loss must be positive' });
+        if (riskPercentage <= 0) errors.push({ element: elements.inputs.riskPercentage, message: 'Risk percentage must be positive' });
+
+        if (stopLossPrice > 0 && entryPrice > 0 && stopLossPrice >= entryPrice) {
+            errors.push({element: elements.errors.stopLoss,
+               message: 'Stop loss must be below entry price'
+           });
+       }
+
+       if (targetPrice > 0 && entryPrice > 0 && targetPrice <= entryPrice) {
+           errors.push({
+               element: elements.errors.targetPrice,
+               message: 'Target price should be above entry price'
+           });
+       }
+   }
+
+   return errors;
+}
+
+function displayErrors(errors) {
+   Object.values(elements.errors).forEach(error => {
+       error.textContent = '';
+       error.classList.add('hidden');
+   });
+   errors.forEach(({ element, message }) => {
+       if (element.tagName === 'INPUT') return;
+       element.textContent = message;
+       element.classList.remove('hidden');
+   });
+}
+
+function resetResults() {
+   requestAnimationFrame(() => {
+       elements.results.shares.textContent = defaults.emptyResult;
+       elements.results.positionSize.textContent = defaults.emptyResult;
+       elements.results.totalRisk.textContent = defaults.emptyResult;
+       elements.results.percentOfAccount.textContent = defaults.emptyResult;
+       elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
+       elements.results.fiveRTarget.textContent = defaults.emptyResult;
+
+       // Hide and reset profit section
+       elements.results.profitSection.classList.add('hidden');
+       elements.results.profitPerShare.textContent = defaults.emptyResult;
+       elements.results.totalProfit.textContent = defaults.emptyResult;
+       elements.results.roi.textContent = defaults.emptyResult;
+       elements.results.riskReward.textContent = defaults.emptyResult;
+   });
+}
+
+// Core Calculation
 function calculatePosition() {
-    // Get input values
-    const accountSize = parseAccountSize(document.getElementById('accountSize').value.replace(/,/g, ''));
-    const riskPercentage = parseFloat(document.getElementById('riskPercentage').value) || 0;
-    const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-    const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
-    const targetPrice = parseFloat(document.getElementById('targetPrice').value) || 0;
+   const values = {
+       accountSize: parseFloat(sanitizeInput(elements.inputs.accountSize.value)) || 0,
+       riskPercentage: parseFloat(elements.inputs.riskPercentage.value) || 0,
+       entryPrice: parseFloat(elements.inputs.entryPrice.value) || 0,
+       stopLossPrice: parseFloat(elements.inputs.stopLossPrice.value) || 0,
+       targetPrice: parseFloat(elements.inputs.targetPrice.value) || 0
+   };
 
-    // Clear warnings
-    const warningEl = document.getElementById('warningMessage');
-    warningEl.classList.remove('show');
+   const errors = validateInputs(values);
+   displayErrors(errors);
 
-    // Default values if no calculation
-    if (!accountSize || !riskPercentage || !entryPrice || !stopLoss) {
-        document.getElementById('sharesToBuy').textContent = '0';
-        document.getElementById('positionSize').textContent = '$0';
-        document.getElementById('riskAmount').textContent = '$0';
-        document.getElementById('accountPercent').textContent = '0%';
-        document.getElementById('target5R').textContent = '$0';
-        document.getElementById('rMultiple').textContent = '0R';
-        document.getElementById('profitPerShare').textContent = '$0';
-        document.getElementById('totalProfit').textContent = '$0';
-        document.getElementById('rrRatio').textContent = '0:1';
-        document.getElementById('roi').textContent = '0%';
-        return;
-    }
+   const hasMeaningfulData = values.accountSize > 0 || values.entryPrice > 0 || values.stopLossPrice > 0 || values.targetPrice > 0;
+   if (!hasMeaningfulData) {
+       resetResults();
+       return;
+   }
 
-    // Calculate risk amount
-    const riskAmount = accountSize * (riskPercentage / 100);
-    
-    // Calculate price differences
-    const stopDistance = Math.abs(entryPrice - stopLoss);
-    const targetDistance = targetPrice ? Math.abs(targetPrice - entryPrice) : 0;
-    
-    // Calculate shares
-    const shares = Math.floor(riskAmount / stopDistance);
-    
-    // Calculate position size
-    const positionSize = shares * entryPrice;
-    
-    // Calculate account percentage
-    const accountPercent = (positionSize / accountSize) * 100;
-    
-    // Calculate 5R target
-    const target5R = entryPrice + (stopDistance * 5);
-    
-    // Calculate R multiple and profits if target is set
-    let rMultiple = 0;
-    let profitPerShare = 0;
-    let totalProfit = 0;
-    let rrRatio = 0;
-    let roi = 0;
-    
-    if (targetPrice && targetPrice > entryPrice) {
-        rMultiple = targetDistance / stopDistance;
-        profitPerShare = targetDistance;
-        totalProfit = shares * targetDistance;
-        rrRatio = rMultiple;
-        roi = (totalProfit / positionSize) * 100;
-    }
+   if (errors.length > 0) return resetResults();
 
-    // Update results
-    document.getElementById('sharesToBuy').textContent = formatNumber(shares);
-    document.getElementById('positionSize').textContent = formatCurrency(positionSize);
-    document.getElementById('riskAmount').textContent = formatCurrency(riskAmount);
-    document.getElementById('accountPercent').textContent = accountPercent.toFixed(2) + '%';
-    document.getElementById('target5R').textContent = '$' + target5R.toFixed(2);
-    document.getElementById('rMultiple').textContent = rMultiple.toFixed(1) + 'R';
-    document.getElementById('profitPerShare').textContent = '$' + profitPerShare.toFixed(2);
-    document.getElementById('totalProfit').textContent = formatCurrency(totalProfit);
-    document.getElementById('rrRatio').textContent = rrRatio.toFixed(1) + ':1';
-    document.getElementById('roi').textContent = roi.toFixed(1) + '%';
+   const riskPerShare = Math.abs(values.entryPrice - values.stopLossPrice);
+   const dollarRiskAmount = (values.accountSize * values.riskPercentage) / 100;
+   const shares = Math.floor(dollarRiskAmount / riskPerShare);
+   const positionSize = shares * values.entryPrice;
 
-    // Update R/R bar
-    if (rrRatio > 0) {
-        const riskWidth = (1 / (1 + rrRatio)) * 100;
-        const rewardWidth = 100 - riskWidth;
-        document.querySelector('.rr-bar').style.gridTemplateColumns = `${riskWidth}% ${rewardWidth}%`;
-    }
+   const results = {
+       shares: formatNumber(shares),
+       positionSize: formatCurrency(positionSize),
+       totalRisk: formatCurrency(shares * riskPerShare),
+       percentOfAccount: formatPercentage((positionSize / values.accountSize) * 100),
+       rMultiple: values.targetPrice > values.entryPrice
+           ? `${((values.targetPrice - values.entryPrice) / riskPerShare).toFixed(2)} R`
+           : defaults.rMultipleEmpty,
+       fiveRTarget: formatCurrency(values.entryPrice + (5 * riskPerShare))
+   };
 
-    // Show warnings
-    if (targetPrice && rrRatio < 2) {
-        document.getElementById('warningText').textContent = 'WARNING: Risk/Reward ratio is below 2:1';
-        warningEl.classList.add('show');
-    } else if (accountPercent > 25) {
-        document.getElementById('warningText').textContent = 'WARNING: Position size exceeds 25% of account';
-        warningEl.classList.add('show');
-    } else if (riskPercentage > 2) {
-        document.getElementById('warningText').textContent = 'WARNING: Risk exceeds 2% - Consider reducing position size';
-        warningEl.classList.add('show');
-    }
+   // Calculate profit metrics if target price is specified
+   const hasValidTargetPrice = values.targetPrice > values.entryPrice;
 
-    // Color code account percentage
-    const percentEl = document.getElementById('accountPercent');
-    if (accountPercent > 25) {
-        percentEl.style.color = 'var(--red)';
-    } else if (accountPercent > 15) {
-        percentEl.style.color = 'var(--orange)';
-    } else {
-        percentEl.style.color = 'var(--black)';
-    }
+   if (hasValidTargetPrice) {
+       const profitPerShare = values.targetPrice - values.entryPrice;
+       const totalProfit = profitPerShare * shares;
+       const roi = (totalProfit / positionSize) * 100;
+       const riskReward = totalProfit / (shares * riskPerShare);
+
+       Object.assign(results, {
+           profitPerShare: formatCurrency(profitPerShare),
+           totalProfit: formatCurrency(totalProfit),
+           roi: formatPercentage(roi),
+           riskReward: riskReward.toFixed(2)
+       });
+
+       elements.results.profitSection.classList.remove('hidden');
+   } else {
+       elements.results.profitSection.classList.add('hidden');
+   }
+
+   requestAnimationFrame(() => {
+       Object.entries(results).forEach(([key, value]) => {
+           if (elements.results[key]) {
+               elements.results[key].textContent = value;
+           }
+       });
+   });
 }
 
-function clearCalculator() {
-    document.getElementById('accountSize').value = '';
-    document.getElementById('riskPercentage').value = '';
-    document.getElementById('entryPrice').value = '';
-    document.getElementById('stopLoss').value = '';
-    document.getElementById('targetPrice').value = '';
-    document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
-    calculatePosition();
+// Debounced calculation
+const debouncedCalculate = debounce(calculatePosition, 250);
+
+// Set up shorthand input for Account Size
+setupShorthandConversion(elements.inputs.accountSize);
+
+// Risk button quick selects
+elements.controls.riskButtons.forEach(button => {
+   button.addEventListener('click', function () {
+       const value = parseFloat(this.getAttribute('data-value'));
+       elements.inputs.riskPercentage.value = value;
+       elements.controls.riskButtons.forEach(btn => btn.classList.remove('active'));
+       this.classList.add('active');
+       debouncedCalculate();
+   });
+});
+
+// Manual percentage entry
+elements.inputs.riskPercentage.addEventListener('input', function () {
+   const value = parseFloat(this.value);
+   elements.controls.riskButtons.forEach(btn => {
+       btn.classList.toggle('active', parseFloat(btn.getAttribute('data-value')) === value);
+   });
+   debouncedCalculate();
+});
+
+// All other inputs except accountSize
+Object.values(elements.inputs).forEach(input => {
+   if (input !== elements.inputs.accountSize) {
+       input.addEventListener('input', debouncedCalculate);
+   }
+});
+
+// Clear button
+elements.controls.clearButton.addEventListener('click', () => {
+   Object.values(elements.inputs).forEach(input => input.value = '');
+   elements.inputs.riskPercentage.value = defaults.riskPercentage;
+   elements.controls.riskButtons.forEach(btn => {
+       btn.classList.toggle('active', btn.getAttribute('data-value') === '1');
+   });
+   resetResults();
+   displayErrors([]);
+});
+
+// Info toggle
+elements.controls.infoButton.addEventListener('click', function () {
+   const isHidden = elements.controls.infoContent.classList.toggle('hidden');
+   elements.controls.infoIcon.textContent = isHidden ? '+' : '−';
+   this.setAttribute('aria-expanded', !isHidden);
+   elements.controls.infoContent.setAttribute('aria-expanded', !isHidden);
+});
+
+// Theme switch
+elements.controls.themeSwitch.addEventListener('change', function () {
+   document.body.classList.toggle('dark-mode', this.checked);
+   localStorage.setItem('theme', this.checked ? 'dark' : 'light');
+});
+
+// Add Profit ➕ to Account
+if (elements.controls.addProfitButton) {
+   elements.controls.addProfitButton.addEventListener('click', () => {
+       const profitText = elements.results.totalProfit.textContent.replace(/[^0-9.-]+/g, '');
+       const accountText = sanitizeInput(elements.inputs.accountSize.value);
+       const profit = parseFloat(profitText);
+       const account = parseFloat(accountText);
+       if (!isNaN(profit) && !isNaN(account)) {
+           const newAccountSize = account + profit;
+           elements.inputs.accountSize.value = formatNumber(newAccountSize);
+           debouncedCalculate();
+       }
+   });
 }
 
-// Initialize
+// Warn on exit with data
+window.addEventListener('beforeunload', function (e) {
+   const hasEnteredData = Object.values(elements.inputs).some(input =>
+       input.value !== '' && (input.id !== 'riskPercentage' || input.value !== '1')
+   );
+   if (hasEnteredData) {
+       e.preventDefault();
+       e.returnValue = 'You have unsaved data in the calculator. Are you sure you want to leave?';
+       return e.returnValue;
+   }
+});
+
+// Theme init
+function initializeTheme() {
+   if (localStorage.getItem('theme') === 'dark') {
+       document.body.classList.add('dark-mode');
+       elements.controls.themeSwitch.checked = true;
+   }
+}
+
+initializeTheme();
 calculatePosition();
