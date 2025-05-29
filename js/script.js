@@ -35,7 +35,8 @@ const elements = {
         addProfitButton: document.getElementById('addProfitButton'),
         scenariosButton: document.getElementById('scenariosButton'),
         scenariosIcon: document.getElementById('scenariosIcon'),
-        scenariosContent: document.getElementById('scenariosContent')
+        scenariosContent: document.getElementById('scenariosContent'),
+        quickScenariosButton: document.getElementById('quickScenariosButton')
     },
     scenarios: {
         scenario01: document.getElementById('scenario-0-1'),
@@ -358,12 +359,34 @@ elements.controls.infoButton.addEventListener('click', function () {
     elements.controls.infoContent.setAttribute('aria-expanded', !isHidden);
 });
 
-// Scenarios toggle
+// Scenarios toggle (bottom button)
 elements.controls.scenariosButton.addEventListener('click', function () {
     const isHidden = elements.controls.scenariosContent.classList.toggle('hidden');
     elements.controls.scenariosIcon.textContent = isHidden ? '+' : '−';
     this.setAttribute('aria-expanded', !isHidden);
+    elements.controls.quickScenariosButton.setAttribute('aria-expanded', !isHidden);
     elements.controls.scenariosContent.setAttribute('aria-expanded', !isHidden);
+});
+
+// Quick scenarios button (top button)
+elements.controls.quickScenariosButton.addEventListener('click', function () {
+    const isHidden = elements.controls.scenariosContent.classList.toggle('hidden');
+
+    // Update both buttons to stay in sync
+    elements.controls.scenariosIcon.textContent = isHidden ? '+' : '−';
+    this.setAttribute('aria-expanded', !isHidden);
+    elements.controls.scenariosButton.setAttribute('aria-expanded', !isHidden);
+    elements.controls.scenariosContent.setAttribute('aria-expanded', !isHidden);
+
+    // Scroll scenarios into view when opened from top button
+    if (!isHidden) {
+        setTimeout(() => {
+            elements.controls.scenariosContent.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
+        }, 100);
+    }
 });
 
 // Theme switch
