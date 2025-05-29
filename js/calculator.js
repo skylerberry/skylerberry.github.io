@@ -86,8 +86,9 @@ export class Calculator {
         this.elements.inputs.accountSize.addEventListener('input', (e) => {
             const inputValue = e.target.value.trim();
             
-            // If completely empty, leave it empty
+            // If completely empty, clear the field and update state
             if (inputValue === '') {
+                e.target.value = ''; // Clear the input to show placeholder
                 this.updateStateFromInput('accountSize', 0);
                 this.debouncedCalculate();
                 return;
@@ -99,18 +100,26 @@ export class Calculator {
             
             // If shorthand was used and converted to a different number, format it
             if (!isNaN(converted) && converted !== sanitized && (inputValue.toLowerCase().includes('k') || inputValue.toLowerCase().includes('m'))) {
+                const cursorPosition = e.target.selectionStart;
+                const originalLength = e.target.value.length;
                 e.target.value = formatNumber(converted);
+                const newLength = e.target.value.length;
+                const newCursorPosition = cursorPosition + (newLength - originalLength);
+                e.target.setSelectionRange(newCursorPosition, newCursorPosition);
                 this.updateStateFromInput('accountSize', converted);
             } else {
-                // For regular numbers, apply comma formatting if it's a complete number
+                // For regular numbers, apply comma formatting as the user types
                 const numberValue = parseFloat(sanitizeInput(inputValue));
-                if (!isNaN(numberValue) && inputValue.length > 3 && !inputValue.includes('.')) {
-                    // Only format if user isn't in the middle of typing a decimal
+                if (!isNaN(numberValue)) {
+                    const cursorPosition = e.target.selectionStart;
+                    const originalLength = e.target.value.length;
                     e.target.value = formatNumber(numberValue);
+                    const newLength = e.target.value.length;
+                    const newCursorPosition = cursorPosition + (newLength - originalLength);
+                    e.target.setSelectionRange(newCursorPosition, newCursorPosition);
                     this.updateStateFromInput('accountSize', numberValue);
                 } else {
-                    // Keep the original input for partial typing
-                    this.updateStateFromInput('accountSize', numberValue || 0);
+                    this.updateStateFromInput('accountSize', 0);
                 }
             }
             
@@ -120,12 +129,15 @@ export class Calculator {
         // Handle blur event for final formatting
         this.elements.inputs.accountSize.addEventListener('blur', (e) => {
             const inputValue = e.target.value.trim();
-            if (inputValue !== '' && !isNaN(parseFloat(sanitizeInput(inputValue)))) {
+            if (inputValue === '') {
+                e.target.value = ''; // Ensure field is empty on blur
+                this.updateStateFromInput('accountSize', 0);
+            } else if (!isNaN(parseFloat(sanitizeInput(inputValue)))) {
                 const numberValue = parseFloat(sanitizeInput(inputValue));
                 e.target.value = formatNumber(numberValue);
                 this.updateStateFromInput('accountSize', numberValue);
-                this.calculate(); // Immediate calculation on blur
             }
+            this.calculate(); // Immediate calculation on blur
         });
 
         // Other price inputs - handle empty values properly
@@ -197,30 +209,6 @@ export class Calculator {
                 this.addProfitToAccount();
             });
         }
-    }
-
-    setupShorthandConversion() {
-        const input = this.elements.inputs.accountSize;
-        let isConverting = false;
-
-        input.addEventListener('input', function(e) {
-            if (isConverting) return;
-
-            const cursorPosition = this.selectionStart;
-            const originalLength = this.value.length;
-
-            const convertedValue = convertShorthand(this.value);
-            if (!isNaN(convertedValue) && convertedValue !== parseFloat(sanitizeInput(this.value))) {
-                isConverting = true;
-                this.value = formatNumber(convertedValue);
-
-                const newLength = this.value.length;
-                const newCursorPosition = cursorPosition + (newLength - originalLength);
-                this.setSelectionRange(newCursorPosition, newCursorPosition);
-
-                isConverting = false;
-            }
-        });
     }
 
     updateStateFromInput(key, value) {
