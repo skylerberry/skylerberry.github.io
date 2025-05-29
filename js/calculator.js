@@ -89,22 +89,28 @@ export class Calculator {
             if (!isNaN(converted) && converted !== parseFloat(sanitizeInput(e.target.value))) {
                 e.target.value = formatNumber(converted);
             }
-            this.updateStateFromInput('accountSize', parseFloat(sanitizeInput(e.target.value)) || 0);
+
+            // Only update state with 0 if there's actually a value, otherwise use empty string
+            const rawValue = sanitizeInput(e.target.value);
+            const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
+            this.updateStateFromInput('accountSize', value);
             this.debouncedCalculate();
         });
 
-        // Other price inputs
+        // Other price inputs - handle empty values properly
         ['entryPrice', 'stopLossPrice', 'targetPrice'].forEach(inputName => {
             this.elements.inputs[inputName].addEventListener('input', (e) => {
-                const value = parseFloat(sanitizeInput(e.target.value)) || 0;
+                const rawValue = sanitizeInput(e.target.value);
+                const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
                 this.updateStateFromInput(inputName, value);
                 this.debouncedCalculate();
             });
         });
 
-        // Risk percentage
+        // Risk percentage - handle empty but default to 1
         this.elements.inputs.riskPercentage.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value) || 0;
+            const rawValue = e.target.value;
+            const value = rawValue === '' ? 1 : parseFloat(rawValue) || 1;
             this.updateStateFromInput('riskPercentage', value);
             this.updateActiveRiskButton(value);
             this.debouncedCalculate();
