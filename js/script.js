@@ -82,9 +82,20 @@ function sanitizeInput(value) {
     return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
 }
 
-// Convert shorthand notation (K for thousands)
+// Updated function to handle both K and M notation
 function convertKShorthand(inputValue) {
     const cleanValue = inputValue.replace(/,/g, '');
+
+    // Check for M (millions) first
+    const mMatch = cleanValue.match(/^(\d*\.?\d+)[Mm]$/);
+    if (mMatch) {
+        const numberPart = parseFloat(mMatch[1]);
+        if (!isNaN(numberPart)) {
+            return numberPart * 1000000;
+        }
+    }
+
+    // Check for K (thousands)
     const kMatch = cleanValue.match(/^(\d*\.?\d+)[Kk]$/);
     if (kMatch) {
         const numberPart = parseFloat(kMatch[1]);
@@ -92,6 +103,7 @@ function convertKShorthand(inputValue) {
             return numberPart * 1000;
         }
     }
+
     return parseFloat(cleanValue);
 }
 
