@@ -140,16 +140,17 @@ export function validateTradeInputs(inputs) {
     // Check if we have meaningful data to validate
     const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
 
+    // Only validate if we have meaningful data AND the specific field has a value
     if (hasData) {
-        if (!isValidPrice(accountSize)) {
+        if (accountSize > 0 && !isValidPrice(accountSize)) {
             errors.push({ field: 'accountSize', message: 'Account size must be a positive number' });
         }
 
-        if (!isValidPrice(entryPrice)) {
+        if (entryPrice > 0 && !isValidPrice(entryPrice)) {
             errors.push({ field: 'entryPrice', message: 'Entry price must be a positive number' });
         }
 
-        if (!isValidPrice(stopLossPrice)) {
+        if (stopLossPrice > 0 && !isValidPrice(stopLossPrice)) {
             errors.push({ field: 'stopLossPrice', message: 'Stop loss must be a positive number' });
         }
 
@@ -157,14 +158,14 @@ export function validateTradeInputs(inputs) {
             errors.push({ field: 'riskPercentage', message: 'Risk percentage must be between 0 and 100' });
         }
 
-        // Relational validations
-        if (isValidPrice(entryPrice) && isValidPrice(stopLossPrice)) {
+        // Relational validations - only if both fields have values > 0
+        if (entryPrice > 0 && stopLossPrice > 0) {
             if (stopLossPrice >= entryPrice) {
                 errors.push({ field: 'stopLossPrice', message: 'Stop loss must be below entry price' });
             }
         }
 
-        if (isValidPrice(entryPrice) && isValidPrice(targetPrice)) {
+        if (entryPrice > 0 && targetPrice > 0) {
             if (targetPrice <= entryPrice) {
                 errors.push({ field: 'targetPrice', message: 'Target price should be above entry price' });
             }
