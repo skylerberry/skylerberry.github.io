@@ -9,6 +9,7 @@ const elements = {
     results: {
         shares: document.getElementById('sharesValue'),
         positionSize: document.getElementById('positionSizeValue'),
+        stopDistance: document.getElementById('stopDistanceValue'),
         totalRisk: document.getElementById('totalRiskValue'),
         percentOfAccount: document.getElementById('percentOfAccountValue'),
         rMultiple: document.getElementById('rMultipleValue'),
@@ -31,7 +32,17 @@ const elements = {
         infoIcon: document.getElementById('infoIcon'),
         infoContent: document.getElementById('infoContent'),
         themeSwitch: document.getElementById('theme-switch'),
-        addProfitButton: document.getElementById('addProfitButton') // new
+        addProfitButton: document.getElementById('addProfitButton'),
+        scenariosButton: document.getElementById('scenariosButton'),
+        scenariosIcon: document.getElementById('scenariosIcon'),
+        scenariosContent: document.getElementById('scenariosContent')
+    },
+    scenarios: {
+        scenario01: document.getElementById('scenario-0-1'),
+        scenario025: document.getElementById('scenario-0-25'),
+        scenario05: document.getElementById('scenario-0-5'),
+        scenario075: document.getElementById('scenario-0-75'),
+        scenario1: document.getElementById('scenario-1')
     }
 };
 
@@ -155,6 +166,7 @@ function resetResults() {
     requestAnimationFrame(() => {
         elements.results.shares.textContent = defaults.emptyResult;
         elements.results.positionSize.textContent = defaults.emptyResult;
+        elements.results.stopDistance.textContent = defaults.emptyResult;
         elements.results.totalRisk.textContent = defaults.emptyResult;
         elements.results.percentOfAccount.textContent = defaults.emptyResult;
         elements.results.rMultiple.textContent = defaults.rMultipleEmpty;
@@ -166,6 +178,48 @@ function resetResults() {
         elements.results.totalProfit.textContent = defaults.emptyResult;
         elements.results.roi.textContent = defaults.emptyResult;
         elements.results.riskReward.textContent = defaults.emptyResult;
+
+        // Reset scenarios
+        elements.scenarios.scenario01.textContent = defaults.emptyResult;
+        elements.scenarios.scenario025.textContent = defaults.emptyResult;
+        elements.scenarios.scenario05.textContent = defaults.emptyResult;
+        elements.scenarios.scenario075.textContent = defaults.emptyResult;
+        elements.scenarios.scenario1.textContent = defaults.emptyResult;
+    });
+}
+
+// Risk Scenarios Function
+function updateRiskScenarios(values) {
+    const riskLevels = [0.1, 0.25, 0.5, 0.75, 1.0];
+    const scenarioElements = [
+        elements.scenarios.scenario01,
+        elements.scenarios.scenario025,
+        elements.scenarios.scenario05,
+        elements.scenarios.scenario075,
+        elements.scenarios.scenario1
+    ];
+
+    // Clear scenarios if no meaningful data
+    const hasMeaningfulData = values.accountSize > 0 && values.entryPrice > 0 && values.stopLossPrice > 0;
+    if (!hasMeaningfulData || values.stopLossPrice >= values.entryPrice) {
+        scenarioElements.forEach(el => el.textContent = '-');
+        return;
+    }
+
+    const riskPerShare = Math.abs(values.entryPrice - values.stopLossPrice);
+
+    riskLevels.forEach((riskLevel, index) => {
+        const dollarRiskAmount = (values.accountSize * riskLevel) / 100;
+        const shares = Math.floor(dollarRiskAmount / riskPerShare);
+        const positionSize = shares * values.entryPrice;
+
+        scenarioElements[index].textContent = `${formatNumber(shares)} shares (${formatCurrency(positionSize)})`;
+    });
+
+    // Update current selection highlight
+    const currentRisk = parseFloat(elements.inputs.riskPercentage.value) || 1;
+    document.querySelectorAll('.scenario-item').forEach((item, index) => {
+        item.classList.toggle('current', riskLevels[index] === currentRisk);
     });
 }
 
@@ -198,6 +252,7 @@ function calculatePosition() {
     const results = {
         shares: formatNumber(shares),
         positionSize: formatCurrency(positionSize),
+        stopDistance: `${((riskPerShare / values.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
         totalRisk: formatCurrency(shares * riskPerShare),
         percentOfAccount: formatPercentage((positionSize / values.accountSize) * 100),
         rMultiple: values.targetPrice > values.entryPrice
@@ -234,6 +289,9 @@ function calculatePosition() {
             }
         });
     });
+
+    // Update risk scenarios
+    updateRiskScenarios(values);
 }
 
 // Debounced calculation
@@ -286,6 +344,14 @@ elements.controls.infoButton.addEventListener('click', function () {
     elements.controls.infoIcon.textContent = isHidden ? '+' : '−';
     this.setAttribute('aria-expanded', !isHidden);
     elements.controls.infoContent.setAttribute('aria-expanded', !isHidden);
+});
+
+// Scenarios toggle
+elements.controls.scenariosButton.addEventListener('click', function () {
+    const isHidden = elements.controls.scenariosContent.classList.toggle('hidden');
+    elements.controls.scenariosIcon.textContent = isHidden ? '+' : '−';
+    this.setAttribute('aria-expanded', !isHidden);
+    elements.controls.scenariosContent.setAttribute('aria-expanded', !isHidden);
 });
 
 // Theme switch
