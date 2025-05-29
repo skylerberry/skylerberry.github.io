@@ -1,8 +1,8 @@
-import {
-    formatCurrency,
-    formatNumber,
-    formatPercentage,
-    sanitizeInput,
+import { 
+    formatCurrency, 
+    formatNumber, 
+    formatPercentage, 
+    sanitizeInput, 
     convertShorthand,
     debounce,
     validateTradeInputs,
@@ -15,7 +15,7 @@ import {
     calculateRMultiple,
     calculateROI,
     DEFAULTS,
-    RISK_LEVELS
+    RISK_LEVELS 
 } from './utils.js';
 
 export class Calculator {
@@ -77,42 +77,85 @@ export class Calculator {
     init() {
         this.setupInputHandlers();
         this.setupControlHandlers();
-        this.setupShorthandConversion();
-
+        
         console.log('🧮 Calculator initialized');
     }
 
     setupInputHandlers() {
-        // Account size with shorthand conversion
+        // Account size with shorthand conversion and comma formatting
         this.elements.inputs.accountSize.addEventListener('input', (e) => {
-            const converted = convertShorthand(e.target.value);
-            if (!isNaN(converted) && converted !== parseFloat(sanitizeInput(e.target.value))) {
-                e.target.value = formatNumber(converted);
+            const inputValue = e.target.value.trim();
+            
+            // If completely empty, leave it empty
+            if (inputValue === '') {
+                this.updateStateFromInput('accountSize', 0);
+                this.debouncedCalculate();
+                return;
             }
-
-            // Only update state with 0 if there's actually a value, otherwise use empty string
-            const rawValue = sanitizeInput(e.target.value);
-            const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
-            this.updateStateFromInput('accountSize', value);
+            
+            // Handle shorthand conversion (K/M notation)
+            const converted = convertShorthand(inputValue);
+            const sanitized = parseFloat(sanitizeInput(inputValue));
+            
+            // If shorthand was used and converted to a different number, format it
+            if (!isNaN(converted) && converted !== sanitized && (inputValue.toLowerCase().includes('k') || inputValue.toLowerCase().includes('m'))) {
+                e.target.value = formatNumber(converted);
+                this.updateStateFromInput('accountSize', converted);
+            } else {
+                // For regular numbers, apply comma formatting if it's a complete number
+                const numberValue = parseFloat(sanitizeInput(inputValue));
+                if (!isNaN(numberValue) && inputValue.length > 3 && !inputValue.includes('.')) {
+                    // Only format if user isn't in the middle of typing a decimal
+                    e.target.value = formatNumber(numberValue);
+                    this.updateStateFromInput('accountSize', numberValue);
+                } else {
+                    // Keep the original input for partial typing
+                    this.updateStateFromInput('accountSize', numberValue || 0);
+                }
+            }
+            
             this.debouncedCalculate();
+        });
+
+        // Handle blur event for final formatting
+        this.elements.inputs.accountSize.addEventListener('blur', (e) => {
+            const inputValue = e.target.value.trim();
+            if (inputValue !== '' && !isNaN(parseFloat(sanitizeInput(inputValue)))) {
+                const numberValue = parseFloat(sanitizeInput(inputValue));
+                e.target.value = formatNumber(numberValue);
+                this.updateStateFromInput('accountSize', numberValue);
+                this.calculate(); // Immediate calculation on blur
+            }
         });
 
         // Other price inputs - handle empty values properly
         ['entryPrice', 'stopLossPrice', 'targetPrice'].forEach(inputName => {
             this.elements.inputs[inputName].addEventListener('input', (e) => {
-                const rawValue = sanitizeInput(e.target.value);
-                const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
-                this.updateStateFromInput(inputName, value);
+                const inputValue = e.target.value.trim();
+                
+                if (inputValue === '') {
+                    this.updateStateFromInput(inputName, 0);
+                } else {
+                    const value = parseFloat(sanitizeInput(inputValue)) || 0;
+                    this.updateStateFromInput(inputName, value);
+                }
                 this.debouncedCalculate();
             });
         });
 
         // Risk percentage - handle empty but default to 1
         this.elements.inputs.riskPercentage.addEventListener('input', (e) => {
-            const rawValue = e.target.value;
-            const value = rawValue === '' ? 1 : parseFloat(rawValue) || 1;
-            this.updateStateFromInput('riskPercentage', value);
-            this.updateActiveRiskButton(value);
+            const inputValue = e.target.value.trim();
+            
+            if (inputValue === '') {
+                // Keep it empty in the UI, but use 1 for calculations
+                this.updateStateFromInput('riskPercentage', 1);
+                this.updateActiveRiskButton(1);
+            } else {
+                const value = parseFloat(inputValue) || 1;
+                this.updateStateFromInput('riskPercentage', value);
+                this.updateActiveRiskButton(value);
+            }
             this.debouncedCalculate();
         });
     }
@@ -193,7 +236,7 @@ export class Calculator {
 
     calculate() {
         const inputs = this.state.calculator.inputs;
-
+        
         // Validate inputs
         const validation = validateTradeInputs(inputs);
         this.state.updateCalculatorValidation(validation);
@@ -322,11 +365,11 @@ export class Calculator {
         }
 
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
-
+        
         RISK_LEVELS.forEach((riskLevel, index) => {
             const shares = calculateShares(inputs.accountSize, riskLevel, riskPerShare);
             const positionSize = calculatePositionSize(shares, inputs.entryPrice);
-
+            
             const text = `${formatNumber(shares)} shares (${formatCurrency(positionSize)})`;
             updateElement(scenarioElements[index], text);
         });
@@ -379,19 +422,19 @@ export class Calculator {
 
     toggleScenarios(scrollIntoView = false) {
         const isHidden = this.elements.controls.scenariosContent.classList.toggle('hidden');
-
+        
         // Update both buttons to stay in sync
         updateElement(this.elements.controls.scenariosIcon, isHidden ? '+' : '−');
         setAttributes(this.elements.controls.scenariosButton, { 'aria-expanded': !isHidden });
         setAttributes(this.elements.controls.quickScenariosButton, { 'aria-expanded': !isHidden });
         setAttributes(this.elements.controls.scenariosContent, { 'aria-expanded': !isHidden });
-
+        
         // Scroll scenarios into view when opened from top button
         if (!isHidden && scrollIntoView) {
             setTimeout(() => {
-                this.elements.controls.scenariosContent.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest'
+                this.elements.controls.scenariosContent.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'nearest' 
                 });
             }, 100);
         }
@@ -402,13 +445,13 @@ export class Calculator {
         const accountText = sanitizeInput(this.elements.inputs.accountSize.value);
         const profit = parseFloat(profitText);
         const account = parseFloat(accountText);
-
+        
         if (!isNaN(profit) && !isNaN(account) && profit > 0) {
             const newAccountSize = account + profit;
             this.elements.inputs.accountSize.value = formatNumber(newAccountSize);
             this.updateStateFromInput('accountSize', newAccountSize);
             this.calculate();
-
+            
             console.log(`💰 Added profit $${formatNumber(profit)} to account. New balance: $${formatNumber(newAccountSize)}`);
         }
     }
