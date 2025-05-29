@@ -140,7 +140,7 @@ export function validateTradeInputs(inputs) {
     // Check if we have meaningful data to validate
     const hasData = accountSize > 0 || entryPrice > 0 || stopLossPrice > 0 || targetPrice > 0;
 
-    // Only validate if we have meaningful data AND the specific field has a value
+    // Only validate if we have meaningful data
     if (hasData) {
         if (accountSize > 0 && !isValidPrice(accountSize)) {
             errors.push({ field: 'accountSize', message: 'Account size must be a positive number' });
@@ -150,7 +150,8 @@ export function validateTradeInputs(inputs) {
             errors.push({ field: 'entryPrice', message: 'Entry price must be a positive number' });
         }
 
-        if (stopLossPrice > 0 && !isValidPrice(stopLossPrice)) {
+        // Only validate stopLossPrice if both accountSize and entryPrice are set
+        if (accountSize > 0 && entryPrice > 0 && stopLossPrice > 0 && !isValidPrice(stopLossPrice)) {
             errors.push({ field: 'stopLossPrice', message: 'Stop loss must be a positive number' });
         }
 
