@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calculate trading position size and risk management for stock trades">
-    <title>Position Size Calculator</title>
-    <link rel="preload" href="css/styles.css" as="style">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" href="favicon.png" type="image/png">
+    <title>Stock Trading Calculator</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <form id="calculatorForm" class="calculator-container" role="main">
-      <h1 class="calculator-title">Stock Trading Calculator</h1>
-<p class="calculator-subtitle">Smart position sizing for safer trading - never risk too much on a single trade</p>
+    <div class="calculator-container">
+        <h1 class="calculator-title">Stock Trading Calculator</h1>
+        <p class="calculator-subtitle">Smart position sizing for safer trading - never risk too much on a single trade</p>
 
+        <!-- Theme Toggle -->
         <div class="theme-toggle-container">
             <label class="theme-toggle" for="theme-switch">
-                <input type="checkbox" id="theme-switch" aria-label="Toggle between light and dark theme">
+                <input type="checkbox" id="theme-switch" aria-label="Toggle dark mode">
                 <span class="toggle-track">
                     <span class="toggle-indicator">
                         <span class="toggle-icon light">☀️</span>
@@ -26,229 +24,237 @@
             </label>
         </div>
 
-        <div class="grid">
-            <div>
-                <h2 class="section-title">Account Information</h2>
+        <!-- Main Calculator Section -->
+        <section class="calculator-section" data-section="calculator">
+            <div class="grid">
+                <!-- Account Information -->
+                <div>
+                    <h2 class="section-title">Account Information</h2>
 
-
-                <div class="input-group">
-                    <label class="input-label" for="accountSize">Account Size ($)</label>
-                    <div class="input-container">
-                        <span class="input-prefix">$</span>
-                        <input type="text" id="accountSize" class="text-input" placeholder="Enter account size (e.g. 10,000)" required>
+                    <div class="input-group">
+                        <label class="input-label" for="accountSize">Account Size ($)</label>
+                        <div class="input-container">
+                            <span class="input-prefix">$</span>
+                            <input type="text" id="accountSize" class="text-input" placeholder="Enter account size (e.g. 10,000)" required>
+                        </div>
+                        <div class="helper-text">Use shorthand: 10k = $10,000 or 1.5m = $1,500,000</div>
                     </div>
-                    <div class="helper-text">Use shorthand: 10k = $10,000 or 1.5m = $1,500,000</div>
+
+                    <div class="input-group">
+                        <div class="risk-header">
+                            <label class="input-label" for="riskPercentage">Risk per Trade (%)</label>
+                            <button type="button" id="quickScenariosButton" class="quick-scenarios-button" aria-expanded="false">
+                                <span id="quickScenariosIcon" class="scenarios-icon">📊</span>
+                                Risk Scenarios
+                            </button>
+                        </div>
+                        <div class="risk-buttons">
+                            <button type="button" class="risk-button" data-value="0.1">0.1%</button>
+                            <button type="button" class="risk-button" data-value="0.25">0.25%</button>
+                            <button type="button" class="risk-button" data-value="0.5">0.5%</button>
+                            <button type="button" class="risk-button" data-value="0.75">0.75%</button>
+                            <button type="button" class="risk-button active" data-value="1">1%</button>
+                        </div>
+                        <div class="input-container">
+                            <input type="number" id="riskPercentage" class="number-input number-input-pct" value="1" min="0" max="100" step="0.05" required>
+                            <span class="input-suffix">%</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="input-group">
-    <div class="risk-header">
-        <label class="input-label" for="riskPercentage">Risk per Trade (%)</label>
-        <button type="button" id="quickScenariosButton" class="quick-scenarios-button" aria-expanded="false">
-            <span id="quickScenariosIcon" class="scenarios-icon">📊</span>
-            Risk Scenarios
-        </button>
-    </div>
-    <div class="risk-buttons">
-        <button type="button" class="risk-button" data-value="0.1">0.1%</button>
-        <button type="button" class="risk-button" data-value="0.25">0.25%</button>
-        <button type="button" class="risk-button" data-value="0.5">0.5%</button>
-        <button type="button" class="risk-button" data-value="0.75">0.75%</button>
-        <button type="button" class="risk-button active" data-value="1">1%</button>
-    </div>
-    <div class="input-container">
-        <input type="number" id="riskPercentage" class="number-input number-input-pct" value="1" min="0" max="100" step="0.05" required>
-        <span class="input-suffix">%</span>
-    </div>
-</div>
+                <!-- Trade Details -->
+                <div>
+                    <h2 class="section-title">Trade Details</h2>
+
+                    <div class="input-group">
+                        <label class="input-label" for="entryPrice">Entry Price ($)</label>
+                        <div class="input-container">
+                            <span class="input-prefix">$</span>
+                            <input type="text" id="entryPrice" class="text-input" placeholder="Enter entry price">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="stopLossPrice">Stop Loss Price ($)</label>
+                        <div class="input-container">
+                            <span class="input-prefix">$</span>
+                            <input type="text" id="stopLossPrice" class="text-input" placeholder="Enter stop loss price">
+                        </div>
+                        <div class="helper-text">Must be below entry price</div>
+                        <div id="stopLossError" class="error-text hidden"></div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="targetPrice">Target Price ($) - Optional</label>
+                        <div class="input-container">
+                            <span class="input-prefix">$</span>
+                            <input type="text" id="targetPrice" class="text-input" placeholder="Enter target price (optional)">
+                        </div>
+                        <div class="helper-text">Should be above entry price</div>
+                        <div id="targetPriceError" class="error-text hidden"></div>
+                    </div>
+                </div>
             </div>
 
-            <div>
-                <h2 class="section-title">Trade Details</h2>
+            <button type="button" id="clearButton" class="clear-button">Clear Calculator</button>
 
-                <div class="input-group">
-                    <label class="input-label" for="entryPrice">Entry Price ($)</label>
-                    <div class="input-container">
-                        <span class="input-prefix">$</span>
-                        <input type="number" id="entryPrice" class="number-input" placeholder="Enter entry price" min="0.01" step="0.01" required>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="stopLossPrice">Stop Loss Price ($)</label>
-                    <div class="input-container">
-                        <span class="input-prefix">$</span>
-                        <input type="number" id="stopLossPrice" class="number-input" placeholder="Enter stop loss price" min="0.01" step="0.01" required>
-                    </div>
-                    <div id="stopLossError" class="error-text hidden"></div>
-                    <div class="helper-text">Must be below entry price</div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label" for="targetPrice">Target Price ($) - Optional</label>
-                    <div class="input-container">
-                        <span class="input-prefix">$</span>
-                        <input type="number" id="targetPrice" class="number-input" placeholder="Enter target price (optional)" min="0" step="0.01">
-                    </div>
-                    <div id="targetPriceError" class="error-text hidden"></div>
-                    <div class="helper-text">Should be above entry price</div>
-                </div>
-            </div>
-        </div>
-
-        <button type="button" id="clearButton" class="clear-button" aria-label="Clear all calculator fields">Clear Calculator</button>
-
-        <!-- Updated Results Section with new 3x2 grid layout -->
-        <div class="results-section">
-            <h2 class="results-title">Results</h2>
-
-            <div class="results-grid">
-                <!-- Row 1 -->
-                <div class="result-card">
-                    <div class="result-label">Shares to Purchase</div>
-                    <div id="sharesValue" class="result-value large">-</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-label">Position Size</div>
-                    <div id="positionSizeValue" class="result-value">-</div>
-                </div>
-
-                <!-- Row 2 -->
-                <div class="result-card">
-                    <div class="result-label">Stop Distance</div>
-                    <div id="stopDistanceValue" class="result-value">-</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-label">Total Risk Amount</div>
-                    <div id="totalRiskValue" class="result-value">-</div>
-                </div>
-
-                <!-- Row 3 -->
-                <div class="result-card">
-                    <div class="result-label">% of Account</div>
-                    <div id="percentOfAccountValue" class="result-value">-</div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-label">R Multiple</div>
-                    <div id="rMultipleValue" class="result-value">- R</div>
-                </div>
-
-                <!-- 5R Target Price (still full width) -->
-                <div class="result-card full-width five-r-card">
-                    <div class="result-label">
-                        5R Target Price
-                        <span class="trim-tag">Trim Zone</span>
-                    </div>
-                    <div id="fiveRTargetValue" class="result-value trim">-</div>
-                </div>
-
-                <!-- Profit Section remains the same -->
-                <div id="profitSection" class="profit-section hidden">
-                    <h3 class="profit-title">Potential Profit</h3>
-                    <div class="profit-grid">
+            <!-- Calculator Results -->
+            <div class="calculator-output">
+                <div class="results-section">
+                    <h3 class="results-title">Results</h3>
+                    <div class="results-grid">
                         <div class="result-card">
-                            <div class="result-label">Profit per Share</div>
-                            <div id="profitPerShareValue" class="result-value profit">-</div>
+                            <div class="result-label">Shares to Purchase</div>
+                            <div class="result-value" id="sharesValue">-</div>
                         </div>
                         <div class="result-card">
-                            <div class="result-label">Total Profit</div>
-                            <div class="profit-with-button">
-                                <span id="totalProfitValue" class="result-value profit">-</span>
-                                <button type="button" id="addProfitButton" class="add-profit-button" title="Add to Account Size">+</button>
+                            <div class="result-label">Position Size</div>
+                            <div class="result-value large" id="positionSizeValue">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">Stop Distance</div>
+                            <div class="result-value" id="stopDistanceValue">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">Total Risk Amount</div>
+                            <div class="result-value" id="totalRiskValue">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">% of Account</div>
+                            <div class="result-value" id="percentOfAccountValue">-</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-label">R Multiple</div>
+                            <div class="result-value" id="rMultipleValue">- R</div>
+                        </div>
+                        <div class="result-card full-width five-r-card">
+                            <div class="result-label">5R Target Price <span class="trim-tag">Trim Zone</span></div>
+                            <div class="result-value trim" id="fiveRTargetValue">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Profit Section -->
+                    <div id="profitSection" class="profit-section hidden">
+                        <div class="profit-title">If Target is Hit</div>
+                        <div class="profit-grid">
+                            <div class="result-card profit-card">
+                                <div class="result-label">Profit Per Share</div>
+                                <div class="result-value profit" id="profitPerShareValue">-</div>
+                            </div>
+                            <div class="result-card profit-card">
+                                <div class="result-label profit-with-button">
+                                    Total Profit
+                                    <button type="button" id="addProfitButton" class="add-profit-button" title="Add profit to account">➕</button>
+                                </div>
+                                <div class="result-value profit" id="totalProfitValue">-</div>
+                            </div>
+                            <div class="result-card profit-card">
+                                <div class="result-label">Return on Investment</div>
+                                <div class="result-value profit" id="roiValue">-</div>
+                            </div>
+                            <div class="result-card profit-card">
+                                <div class="result-label">Risk:Reward Ratio</div>
+                                <div class="result-value profit" id="riskRewardValue">-</div>
                             </div>
                         </div>
-                        <div class="result-card">
-                            <div class="result-label">Return on Investment</div>
-                            <div id="roiValue" class="result-value profit">-</div>
+                    </div>
+                </div>
+
+                <!-- Info Section -->
+                <button type="button" id="infoButton" class="info-button" aria-expanded="false">
+                    <span id="infoIcon" class="info-icon">+</span>
+                    How is position size calculated?
+                </button>
+
+                <div id="infoContent" class="info-content hidden" role="region" aria-expanded="false">
+                    <div class="info-header">
+                        <h3 class="info-title">How it Works - Example</h3>
+                    </div>
+
+                    <div class="example-scenario">
+                        <p class="scenario-intro">If you have a <strong>$10,000 account</strong> and want to risk <strong>1%</strong>:</p>
+
+                        <div class="calculation-steps">
+                            <div class="calc-step">
+                                <span class="step-label">Your risk budget:</span>
+                                <span class="step-value">$100</span>
+                            </div>
+
+                            <div class="calc-step">
+                                <span class="step-label">Stock price: $50, Stop loss: $48</span>
+                                <span class="step-value">(risking $2 per share)</span>
+                            </div>
+
+                            <div class="calc-step">
+                                <span class="step-label">Shares to buy:</span>
+                                <span class="step-value">$100 ÷ $2 = 50 shares</span>
+                            </div>
+
+                            <div class="calc-step highlight">
+                                <span class="step-label">Position size:</span>
+                                <span class="step-value">50 × $50 = $2,500</span>
+                            </div>
                         </div>
-                        <div class="result-card">
-                            <div class="result-label">Risk/Reward Ratio</div>
-                            <div id="riskRewardValue" class="result-value profit">-</div>
+
+                        <div class="info-conclusion">
+                            <p>💡 This way, you never risk more than 1% even if the trade goes wrong!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Scenarios Section -->
+                <button type="button" id="scenariosButton" class="info-button" aria-expanded="false">
+                    <span id="scenariosIcon" class="info-icon">+</span>
+                    Risk Scenarios
+                </button>
+
+                <div id="scenariosContent" class="scenarios-content hidden" role="region" aria-expanded="false">
+                    <div class="scenarios-grid">
+                        <div class="scenario-item">
+                            <span class="scenario-risk">0.1% Risk</span>
+                            <span class="scenario-details" id="scenario-0-1">-</span>
+                        </div>
+                        <div class="scenario-item">
+                            <span class="scenario-risk">0.25% Risk</span>
+                            <span class="scenario-details" id="scenario-0-25">-</span>
+                        </div>
+                        <div class="scenario-item">
+                            <span class="scenario-risk">0.5% Risk</span>
+                            <span class="scenario-details" id="scenario-0-5">-</span>
+                        </div>
+                        <div class="scenario-item">
+                            <span class="scenario-risk">0.75% Risk</span>
+                            <span class="scenario-details" id="scenario-0-75">-</span>
+                        </div>
+                        <div class="scenario-item">
+                            <span class="scenario-risk">1% Risk</span>
+                            <span class="scenario-details" id="scenario-1">-</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <button type="button" id="infoButton" class="info-button" aria-expanded="false">
-            <span id="infoIcon" class="info-icon">+</span>
-            How is position size calculated?
-        </button>
-
-        <div id="infoContent" class="info-content hidden" role="region" aria-expanded="false">
-            <div class="info-header">
-                <h3 class="info-title">How it Works - Example</h3>
+        <!-- Journal Section Placeholder -->
+        <section class="journal-section hidden" data-section="journal" aria-hidden="true">
+            <h2 class="section-title">Trade Journal</h2>
+            <!-- Journal UI will be added here -->
+            <div class="journal-placeholder">
+                <p>Journal feature coming soon...</p>
             </div>
+        </section>
 
-            <div class="example-scenario">
-                <p class="scenario-intro">If you have a <strong>$10,000 account</strong> and want to risk <strong>1%</strong>:</p>
-
-                <div class="calculation-steps">
-                    <div class="calc-step">
-                        <span class="step-label">Your risk budget:</span>
-                        <span class="step-value">$100</span>
-                    </div>
-
-                    <div class="calc-step">
-                        <span class="step-label">Stock price: $50, Stop loss: $48</span>
-                        <span class="step-value">(risking $2 per share)</span>
-                    </div>
-
-                    <div class="calc-step">
-                        <span class="step-label">Shares to buy:</span>
-                        <span class="step-value">$100 ÷ $2 = 50 shares</span>
-                    </div>
-
-                    <div class="calc-step highlight">
-                        <span class="step-label">Position size:</span>
-                        <span class="step-value">50 × $50 = $2,500</span>
-                    </div>
-                </div>
-
-                <div class="info-conclusion">
-                    <p>💡 This way, you never risk more than 1% even if the trade goes wrong!</p>
-                </div>
-            </div>
-        </div>
-
-        <button type="button" id="scenariosButton" class="info-button" aria-expanded="false">
-    <span id="scenariosIcon" class="info-icon">+</span>
-    Risk Scenarios
-</button>
-
-<div id="scenariosContent" class="scenarios-content hidden" role="region" aria-expanded="false">
-    <div class="scenarios-grid">
-        <div class="scenario-item">
-            <div class="scenario-risk">0.1% Risk</div>
-            <div id="scenario-0-1" class="scenario-details">-</div>
-        </div>
-        <div class="scenario-item">
-            <div class="scenario-risk">0.25% Risk</div>
-            <div id="scenario-0-25" class="scenario-details">-</div>
-        </div>
-        <div class="scenario-item">
-            <div class="scenario-risk">0.5% Risk</div>
-            <div id="scenario-0-5" class="scenario-details">-</div>
-        </div>
-        <div class="scenario-item">
-            <div class="scenario-risk">0.75% Risk</div>
-            <div id="scenario-0-75" class="scenario-details">-</div>
-        </div>
-        <div class="scenario-item current">
-            <div class="scenario-risk">1% Risk</div>
-            <div id="scenario-1" class="scenario-details">-</div>
-        </div>
+        <!-- Footer -->
+        <footer class="calculator-footer">
+            Made with
+            <svg class="heart-icon" viewBox="0 0 24 24">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            by Skyler <a href="https://twitter.com/applevisionpro" target="_blank" rel="noopener">@applevisionpro</a>
+        </footer>
     </div>
-</div>
 
-<footer class="calculator-footer">
-    Made with ❤️ by Skyler
-    <a href="https://discord.gg/t6BZV9nQ">@applevisionpro</a>
-</footer>
-    </form>
-
-    <script src="js/script.js" defer></script>
+    <!-- Scripts will be modularized -->
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
