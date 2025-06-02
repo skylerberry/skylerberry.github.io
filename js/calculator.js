@@ -237,6 +237,14 @@ export class Calculator {
         });
     }
 
+    updateResults(results) {
+        Object.entries(results).forEach(([key, value]) => {
+            if (this.elements.results[key]) {
+                updateElement(this.elements.results[key], value);
+            }
+        });
+    }
+
     calculate() {
         const { accountSize, riskPercentage, entryPrice, stopLossPrice, targetPrice, maxAccountRisk } = this.state;
         const isValid = validateTradeInputs({
