@@ -1,4 +1,3 @@
-// Centralized state management
 export class AppState {
     constructor() {
         this.state = {
@@ -8,7 +7,8 @@ export class AppState {
                     riskPercentage: 1,
                     entryPrice: 0,
                     stopLossPrice: 0,
-                    targetPrice: 0
+                    targetPrice: 0,
+                    maxAccountRiskSize: 0 // New input for max account risk size
                 },
                 results: {
                     shares: '-',
@@ -79,7 +79,7 @@ export class AppState {
     }
 
     updateCalculatorResults(results) {
-        this.state.calculator.results = { ...this.state.calculator.results, ...results };
+        this.formatResult = { ...this.state.calculator.results, ...results };
         this.emit('calculatorResultsChanged', results);
         this.emit('stateChange', { section: 'calculator', type: 'results', results });
     }
