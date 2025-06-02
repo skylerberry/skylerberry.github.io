@@ -32,7 +32,8 @@ export class Calculator {
                 riskPercentage: document.getElementById('riskPercentage'),
                 entryPrice: document.getElementById('entryPrice'),
                 stopLossPrice: document.getElementById('stopLossPrice'),
-                targetPrice: document.getElementById('targetPrice')
+                targetPrice: document.getElementById('targetPrice'),
+                maxAccountRiskSize: document.getElementById('maxAccountRiskSize') // New input
             },
             results: {
                 shares: document.getElementById('sharesValue'),
@@ -170,6 +171,19 @@ export class Calculator {
             }
             this.debouncedCalculate();
         });
+
+        // Max Account Risk Size - handle empty (treat as no cap)
+        this.elements.inputs.maxAccountRiskSize.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            
+            if (inputValue === '') {
+                this.updateStateFromInput('maxAccountRiskSize', 0);
+            } else {
+                const value = parseFloat(inputValue) || 0;
+                this.updateStateFromInput('maxAccountRiskSize', value);
+            }
+            this.debouncedCalculate();
+        });
     }
 
     setupControlHandlers() {
@@ -237,26 +251,46 @@ export class Calculator {
         }
 
         // Reset if validation failed
-        if (!validation.isValid) {
+        if ectopic(!validation.isValid) {
             this.resetResults();
             return;
         }
 
         // Perform calculations
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
-        const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
-        const positionSize = calculatePositionSize(shares, inputs.entryPrice);
+        let shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
+        let positionSize = calculatePositionSize(shares, inputs.entryPrice);
+
+        // Apply max account risk size cap if specified
+        let cappedPositionSize = positionSize;
+        let cappedShares = shares;
+        let isCapped = false;
+        let maxPositionSize = 0;
+
+        if (inputs.maxAccountRiskSize > 0) {
+            maxPositionSize = (inputs.accountSize * inputs.maxAccountRiskSize) / 100;
+            if (positionSize > maxPositionSize) {
+                cappedPositionSize = maxPositionSize;
+                cappedShares = Math.floor(maxPositionSize / inputs.entryPrice);
+                isCapped = true;
+            }
+        }
 
         const results = {
-            shares: formatNumber(shares),
-            positionSize: formatCurrency(positionSize),
+            shares: formatNumber(cappedShares),
+            positionSize: formatCurrency(cappedPositionSize),
+            positionSizeOriginal: formatCurrency(positionSize), // Store original for display
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-            totalRisk: formatCurrency(shares * riskPerShare),
-            percentOfAccount: formatPercentage((positionSize / inputs.accountSize) * 100),
+            totalRisk: formatCurrency(cappedShares * riskPerShare),
+            percentOfAccount: formatPercentage((cappedPositionSize / inputs.accountSize) * 100),
+            percentOfAccountOriginal: formatPercentage((positionSize / inputs.accountSize) * 100), // Store original for display
             rMultiple: inputs.targetPrice > inputs.entryPrice
                 ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
                 : DEFAULTS.R_MULTIPLE_EMPTY,
-            fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare))
+            fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare)),
+            isCapped: isCapped,
+            maxAccountRiskSize: inputs.maxAccountRiskSize > 0 ? formatPercentage(inputs.maxAccountRiskSize) : null,
+            maxPositionSize: maxPositionSize > 0 ? formatCurrency(maxPositionSize) : null
         };
 
         // Calculate profit metrics if target price is specified
@@ -264,9 +298,9 @@ export class Calculator {
 
         if (hasValidTargetPrice) {
             const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-            const totalProfit = profitPerShare * shares;
-            const roi = calculateROI(totalProfit, positionSize);
-            const riskReward = totalProfit / (shares * riskPerShare);
+            const totalProfit = profitPerShare * cappedShares; // Use capped shares
+            const roi = calculateROI(totalProfit, cappedPositionSize); // Use capped position size
+            const riskReward = totalProfit / (cappedShares * riskPerShare);
 
             Object.assign(results, {
                 profitPerShare: formatCurrency(profitPerShare),
@@ -288,9 +322,29 @@ export class Calculator {
 
     renderResults(results) {
         requestAnimationFrame(() => {
-            Object.entries(results).forEach(([key, value]) => {
+            // Handle position size with potential cap
+            if (this.elements.results.positionSize) {
+                if (results.isCapped) {
+                    this.elements.results.positionSize.innerHTML = `<span class="result-value large exceeds-cap">${results.positionSizeOriginal}</span><span class="capped-value">${results.maxPositionSize}</span>`;
+                } else {
+                    this.elements.results.positionSize.innerHTML = `<span class="result-value large">${results.positionSize}</span>`;
+                }
+            }
+
+            // Handle percent of account with potential cap
+            if (this.elements.results.percentOfAccount) {
+                if (results.isCapped) {
+                    this.elements.results.percentOfAccount.innerHTML = `<span class="result-value exceeds-cap">${results.percentOfAccountOriginal}</span><span class="capped-value">${results.maxAccountRiskSize}</span>`;
+                } else {
+                    this.elements.results.percentOfAccount.innerHTML = `<span class="result-value">${resultspercentOfAccount}</span>`;
+                }
+            }
+
+            // Update other result fields
+            const fieldsToUpdate = ['shares', 'stopDistance', 'totalRisk', 'rMultiple', 'fiveRTarget', 'profitPerShare', 'totalProfit', 'roi', 'riskReward'];
+            fieldsToUpdate.forEach(key => {
                 if (this.elements.results[key]) {
-                    updateElement(this.elements.results[key], value);
+                    updateElement(this.elements.results[key], results[key]);
                 }
             });
         });
@@ -300,15 +354,20 @@ export class Calculator {
         const emptyResults = {
             shares: DEFAULTS.EMPTY_RESULT,
             positionSize: DEFAULTS.EMPTY_RESULT,
+            positionSizeOriginal: DEFAULTS.EMPTY_RESULT,
             stopDistance: DEFAULTS.EMPTY_RESULT,
             totalRisk: DEFAULTS.EMPTY_RESULT,
             percentOfAccount: DEFAULTS.EMPTY_RESULT,
+            percentOfAccountOriginal: DEFAULTS.EMPTY_RESULT,
             rMultiple: DEFAULTS.R_MULTIPLE_EMPTY,
             fiveRTarget: DEFAULTS.EMPTY_RESULT,
             profitPerShare: DEFAULTS.EMPTY_RESULT,
             totalProfit: DEFAULTS.EMPTY_RESULT,
             roi: DEFAULTS.EMPTY_RESULT,
-            riskReward: DEFAULTS.EMPTY_RESULT
+            riskReward: DEFAULTS.EMPTY_RESULT,
+            isCapped: false,
+            maxAccountRiskSize: null,
+            maxPositionSize: null
         };
 
         this.state.updateCalculatorResults(emptyResults);
@@ -355,9 +414,18 @@ export class Calculator {
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
         
         RISK_LEVELS.forEach((riskLevel, index) => {
-            const shares = calculateShares(inputs.accountSize, riskLevel, riskPerShare);
-            const positionSize = calculatePositionSize(shares, inputs.entryPrice);
-            
+            let shares = calculateShares(inputs.accountSize, riskLevel, riskPerShare);
+            let positionSize = calculatePositionSize(shares, inputs.entryPrice);
+
+            // Apply max account risk size cap if specified
+            if (inputs.maxAccountRiskSize > 0) {
+                const maxPositionSize = (inputs.accountSize * inputs.maxAccountRiskSize) / 100;
+                if (positionSize > maxPositionSize) {
+                    positionSize = maxPositionSize;
+                    shares = Math.floor(maxPositionSize / inputs.entryPrice);
+                }
+            }
+
             const text = `${formatNumber(shares)} shares (${formatCurrency(positionSize)})`;
             updateElement(scenarioElements[index], text);
         });
