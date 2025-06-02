@@ -251,7 +251,7 @@ export class Calculator {
         }
 
         // Reset if validation failed
-        if ectopic(!validation.isValid) {
+        if (!validation.isValid) {
             this.resetResults();
             return;
         }
