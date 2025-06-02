@@ -239,7 +239,13 @@ export class Calculator {
 
     calculate() {
         const { accountSize, riskPercentage, entryPrice, stopLossPrice, targetPrice, maxAccountRisk } = this.state;
-        const isValid = validateTradeInputs(accountSize, riskPercentage, entryPrice, stopLossPrice, targetPrice);
+        const isValid = validateTradeInputs({
+            accountSize,
+            riskPercentage,
+            entryPrice,
+            stopLossPrice,
+            targetPrice
+        });
 
         if (!isValid) {
             this.updateResults({
