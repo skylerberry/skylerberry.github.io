@@ -400,7 +400,7 @@ export class Calculator {
             console.log(`💰 Added profit ${formatNumber(profit)} to account. New balance: ${formatNumber(newAccountSize)}`);
         }
     }
-} Account size with shorthand conversion and comma formatting
+} // Account size with shorthand conversion and comma formatting
         this.elements.inputs.accountSize.addEventListener('input', (e) => {
             const inputValue = e.target.value.trim();
             
