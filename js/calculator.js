@@ -30,7 +30,6 @@ export class Calculator {
             inputs: {
                 accountSize: document.getElementById('accountSize'),
                 riskPercentage: document.getElementById('riskPercentage'),
-                maxAccountRisk: document.getElementById('maxAccountRisk'), // NEW
                 entryPrice: document.getElementById('entryPrice'),
                 stopLossPrice: document.getElementById('stopLossPrice'),
                 targetPrice: document.getElementById('targetPrice')
@@ -38,11 +37,9 @@ export class Calculator {
             results: {
                 shares: document.getElementById('sharesValue'),
                 positionSize: document.getElementById('positionSizeValue'),
-                positionSizeCard: document.getElementById('positionSizeCard'), // NEW
                 stopDistance: document.getElementById('stopDistanceValue'),
                 totalRisk: document.getElementById('totalRiskValue'),
                 percentOfAccount: document.getElementById('percentOfAccountValue'),
-                percentOfAccountCard: document.getElementById('percentOfAccountCard'), // NEW
                 rMultiple: document.getElementById('rMultipleValue'),
                 fiveRTarget: document.getElementById('fiveRTargetValue'),
                 profitSection: document.getElementById('profitSection'),
@@ -85,6 +82,127 @@ export class Calculator {
     }
 
     setupInputHandlers() {
+        // Account size with shorthand conversion and comma formatting
+        this.elements.inputs.accountSize.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            
+            // If completely empty, clear the field and update state
+            if (inputValue === '') {
+                e.target.value = ''; // Clear the input to show placeholder
+                this.updateStateFromInput('accountSize', 0);
+                this.debouncedCalculate();
+                return;
+            }
+            
+            // Handle shorthand conversion (K/M notation)
+            const converted = convertShorthand(inputValue);
+            const sanitized = parseFloat(sanitizeInput(inputValue));
+            
+            // If shorthand was used and converted to a different number, format it
+            if (!isNaN(converted) && converted !== sanitized && (inputValue.toLowerCase().includes('k') || inputValue.toLowerCase().includes('m'))) {
+                const cursorPosition = e.target.selectionStart;
+                const originalLength = e.target.value.length;
+                e.target.value = formatNumber(converted);
+                const newLength = e.target.value.length;
+                const newCursorPosition = cursorPosition + (newLength - originalLength);
+                e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+                this.updateStateFromInput('accountSize', converted);
+            } else {
+                // For regular numbers, apply comma formatting as the user types
+                const numberValue = parseFloat(sanitizeInput(inputValue));
+                if (!isNaN(numberValue)) {
+                    const cursorPosition = e.target.selectionStart;
+                    const originalLength = e.target.value.length;
+                    e.target.value = formatNumber(numberValue);
+                    const newLength = e.target.value.length;
+                    const newCursorPosition = cursorPosition + (newLength - originalLength);
+                    e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+                    this.updateStateFromInput('accountSize', numberValue);
+                } else {
+                    this.updateStateFromInput('accountSize', 0);
+                }
+            }
+            
+            this.debouncedCalculate();
+        });
+
+        // Handle blur event for final formatting
+        this.elements.inputs.accountSize.addEventListener('blur', (e) => {
+            const inputValue = e.target.value.trim();
+            if (inputValue === '') {
+                e.target.value = ''; // Ensure field is empty on blur
+                this.updateStateFromInput('accountSize', 0);
+            } else if (!isNaN(parseFloat(sanitizeInput(inputValue)))) {
+                const numberValue = parseFloat(sanitizeInput(inputValue));
+                e.target.value = formatNumber(numberValue);
+                this.updateStateFromInput('accountSize', numberValue);
+            }
+            this.calculate(); // Immediate calculation on blur
+        });
+
+        // Other price inputs - handle empty values properly
+        ['entryPrice', 'stopLossPrice', 'targetPrice'].forEach(inputName => {
+            this.elements.inputs[inputName].addEventListener('input', (e) => {
+                const inputValue = e.target.value.trim();
+                
+                if (inputValue === '') {
+                    this.updateStateFromInput(inputName, 0);
+                } else {
+                    const value = parseFloat(sanitizeInput(inputValue)) || 0;
+                    this.updateStateFromInput(inputName, value);
+                }
+                this.debouncedCalculate();
+            });
+        });
+
+        // Risk percentage - handle empty but default to 1
+        this.elements.inputs.riskPercentage.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            
+            if (inputValue === '') {
+                // Keep it empty in the UI, but use 1 for calculations
+                this.updateStateFromInput('riskPercentage', 1);
+                this.updateActiveRiskButton(1);
+            } else {
+                const value = parseFloat(inputValue) || 1;
+                this.updateStateFromInput('riskPercentage', value);
+                this.updateActiveRiskButton(value);
+            }
+            this.debouncedCalculate();
+        });
+    }
+
+    setupControlHandlers() {
+        // Risk buttons
+        this.elements.controls.riskButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const value = parseFloat(button.getAttribute('data-value'));
+                this.elements.inputs.riskPercentage.value = value;
+                this.updateStateFromInput('riskPercentage', value);
+                this.updateActiveRiskButton(value);
+                this.calculate();
+            });
+        });
+
+        // Clear button
+        this.elements.controls.clearButton.addEventListener('click', () => {
+            this.clearAll();
+        });
+
+        // Info toggle
+        this.elements.controls.infoButton.addEventListener('click', () => {
+            this.toggleInfo();
+        });
+
+        // Scenarios toggles (both buttons)
+        this.elements.controls.scenariosButton.addEventListener('click', () => {
+            this.toggleScenarios();
+        });
+
+        this.elements.controls.quickScenariosButton.addEventListener('click', () => {
+            this.toggleScenarios(true); // true = scroll into view
+        });
+
         // Add profit button
         if (this.elements.controls.addProfitButton) {
             this.elements.controls.addProfitButton.addEventListener('click', () => {
@@ -104,30 +222,12 @@ export class Calculator {
         });
     }
 
-    // NEW: Create risk warning display elements
-    createRiskWarningDisplay(originalValue, correctedValue, isPercentage = false) {
-        const container = document.createElement('span');
-        container.className = 'risk-exceeded';
-        
-        const original = document.createElement('span');
-        original.className = 'original-value';
-        original.textContent = isPercentage ? formatPercentage(originalValue) : formatCurrency(originalValue);
-        
-        const corrected = document.createElement('span');
-        corrected.className = 'corrected-value';
-        corrected.textContent = isPercentage ? formatPercentage(correctedValue) : formatCurrency(correctedValue);
-        
-        container.appendChild(original);
-        container.appendChild(corrected);
-        
-        return container;
-    }
-
     calculate() {
         const inputs = this.state.calculator.inputs;
         
         // Validate inputs
         const validation = validateTradeInputs(inputs);
+        this.state.updateCalculatorValidation(validation);
         this.displayErrors(validation.errors);
 
         // Reset if no meaningful data
@@ -146,29 +246,13 @@ export class Calculator {
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
         const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
         const positionSize = calculatePositionSize(shares, inputs.entryPrice);
-        const accountPercentage = (positionSize / inputs.accountSize) * 100;
-
-        // NEW: Check if position exceeds max account risk
-        const exceedsMaxRisk = inputs.maxAccountRisk !== null && accountPercentage > inputs.maxAccountRisk;
-        
-        // NEW: Calculate corrected values if needed
-        let displayShares = shares;
-        let displayPositionSize = positionSize;
-        let displayAccountPercentage = accountPercentage;
-        
-        if (exceedsMaxRisk) {
-            const maxPositionSize = (inputs.accountSize * inputs.maxAccountRisk) / 100;
-            displayShares = Math.floor(maxPositionSize / inputs.entryPrice);
-            displayPositionSize = maxPositionSize;
-            displayAccountPercentage = inputs.maxAccountRisk;
-        }
 
         const results = {
-            shares: formatNumber(displayShares),
-            positionSize: formatCurrency(displayPositionSize),
+            shares: formatNumber(shares),
+            positionSize: formatCurrency(positionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-            totalRisk: formatCurrency(displayShares * riskPerShare),
-            percentOfAccount: formatPercentage(displayAccountPercentage),
+            totalRisk: formatCurrency(shares * riskPerShare),
+            percentOfAccount: formatPercentage((positionSize / inputs.accountSize) * 100),
             rMultiple: inputs.targetPrice > inputs.entryPrice
                 ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
                 : DEFAULTS.R_MULTIPLE_EMPTY,
@@ -180,9 +264,9 @@ export class Calculator {
 
         if (hasValidTargetPrice) {
             const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-            const totalProfit = profitPerShare * displayShares; // Use corrected shares
-            const roi = calculateROI(totalProfit, displayPositionSize); // Use corrected position size
-            const riskReward = totalProfit / (displayShares * riskPerShare);
+            const totalProfit = profitPerShare * shares;
+            const roi = calculateROI(totalProfit, positionSize);
+            const riskReward = totalProfit / (shares * riskPerShare);
 
             Object.assign(results, {
                 profitPerShare: formatCurrency(profitPerShare),
@@ -196,54 +280,16 @@ export class Calculator {
             toggleClass(this.elements.results.profitSection, 'hidden', true);
         }
 
-        // NEW: Update validation state with risk warning
-        const updatedValidation = {
-            ...validation,
-            exceedsMaxRisk: exceedsMaxRisk
-        };
-        this.state.updateCalculatorValidation(updatedValidation);
-
         // Update state and UI
         this.state.updateCalculatorResults(results);
-        this.renderResults(results, exceedsMaxRisk, {
-            originalPositionSize: positionSize,
-            originalAccountPercentage: accountPercentage,
-            correctedPositionSize: displayPositionSize,
-            correctedAccountPercentage: displayAccountPercentage
-        });
+        this.renderResults(results);
         this.updateRiskScenarios(inputs);
     }
 
-    // NEW: Updated renderResults to handle risk warnings
-    renderResults(results, exceedsMaxRisk = false, riskData = null) {
+    renderResults(results) {
         requestAnimationFrame(() => {
-            // Handle Position Size with potential warning
-            if (exceedsMaxRisk && riskData) {
-                this.elements.results.positionSize.innerHTML = '';
-                this.elements.results.positionSize.appendChild(
-                    this.createRiskWarningDisplay(riskData.originalPositionSize, riskData.correctedPositionSize)
-                );
-                toggleClass(this.elements.results.positionSizeCard, 'risk-warning', true);
-            } else {
-                updateElement(this.elements.results.positionSize, results.positionSize);
-                toggleClass(this.elements.results.positionSizeCard, 'risk-warning', false);
-            }
-
-            // Handle % of Account with potential warning
-            if (exceedsMaxRisk && riskData) {
-                this.elements.results.percentOfAccount.innerHTML = '';
-                this.elements.results.percentOfAccount.appendChild(
-                    this.createRiskWarningDisplay(riskData.originalAccountPercentage, riskData.correctedAccountPercentage, true)
-                );
-                toggleClass(this.elements.results.percentOfAccountCard, 'risk-warning', true);
-            } else {
-                updateElement(this.elements.results.percentOfAccount, results.percentOfAccount);
-                toggleClass(this.elements.results.percentOfAccountCard, 'risk-warning', false);
-            }
-
-            // Update other results normally
             Object.entries(results).forEach(([key, value]) => {
-                if (key !== 'positionSize' && key !== 'percentOfAccount' && this.elements.results[key]) {
+                if (this.elements.results[key]) {
                     updateElement(this.elements.results[key], value);
                 }
             });
@@ -266,7 +312,7 @@ export class Calculator {
         };
 
         this.state.updateCalculatorResults(emptyResults);
-        this.renderResults(emptyResults, false); // No risk warnings when reset
+        this.renderResults(emptyResults);
         toggleClass(this.elements.results.profitSection, 'hidden', true);
         this.resetScenarios();
     }
@@ -339,9 +385,6 @@ export class Calculator {
             if (key === 'riskPercentage') {
                 input.value = DEFAULTS.RISK_PERCENTAGE;
                 this.updateStateFromInput(key, DEFAULTS.RISK_PERCENTAGE);
-            } else if (key === 'maxAccountRisk') {
-                input.value = ''; // NEW: Clear max account risk
-                this.updateStateFromInput(key, null);
             } else {
                 input.value = '';
                 this.updateStateFromInput(key, 0);
@@ -397,139 +440,7 @@ export class Calculator {
             this.updateStateFromInput('accountSize', newAccountSize);
             this.calculate();
             
-            console.log(`💰 Added profit ${formatNumber(profit)} to account. New balance: ${formatNumber(newAccountSize)}`);
+            console.log(`💰 Added profit $${formatNumber(profit)} to account. New balance: $${formatNumber(newAccountSize)}`);
         }
     }
-} // Account size with shorthand conversion and comma formatting
-        this.elements.inputs.accountSize.addEventListener('input', (e) => {
-            const inputValue = e.target.value.trim();
-            
-            if (inputValue === '') {
-                e.target.value = '';
-                this.updateStateFromInput('accountSize', 0);
-                this.debouncedCalculate();
-                return;
-            }
-            
-            const converted = convertShorthand(inputValue);
-            const sanitized = parseFloat(sanitizeInput(inputValue));
-            
-            if (!isNaN(converted) && converted !== sanitized && (inputValue.toLowerCase().includes('k') || inputValue.toLowerCase().includes('m'))) {
-                const cursorPosition = e.target.selectionStart;
-                const originalLength = e.target.value.length;
-                e.target.value = formatNumber(converted);
-                const newLength = e.target.value.length;
-                const newCursorPosition = cursorPosition + (newLength - originalLength);
-                e.target.setSelectionRange(newCursorPosition, newCursorPosition);
-                this.updateStateFromInput('accountSize', converted);
-            } else {
-                const numberValue = parseFloat(sanitizeInput(inputValue));
-                if (!isNaN(numberValue)) {
-                    const cursorPosition = e.target.selectionStart;
-                    const originalLength = e.target.value.length;
-                    e.target.value = formatNumber(numberValue);
-                    const newLength = e.target.value.length;
-                    const newCursorPosition = cursorPosition + (newLength - originalLength);
-                    e.target.setSelectionRange(newCursorPosition, newCursorPosition);
-                    this.updateStateFromInput('accountSize', numberValue);
-                } else {
-                    this.updateStateFromInput('accountSize', 0);
-                }
-            }
-            
-            this.debouncedCalculate();
-        });
-
-        this.elements.inputs.accountSize.addEventListener('blur', (e) => {
-            const inputValue = e.target.value.trim();
-            if (inputValue === '') {
-                e.target.value = '';
-                this.updateStateFromInput('accountSize', 0);
-            } else if (!isNaN(parseFloat(sanitizeInput(inputValue)))) {
-                const numberValue = parseFloat(sanitizeInput(inputValue));
-                e.target.value = formatNumber(numberValue);
-                this.updateStateFromInput('accountSize', numberValue);
-            }
-            this.calculate();
-        });
-
-        // Other price inputs
-        ['entryPrice', 'stopLossPrice', 'targetPrice'].forEach(inputName => {
-            this.elements.inputs[inputName].addEventListener('input', (e) => {
-                const inputValue = e.target.value.trim();
-                
-                if (inputValue === '') {
-                    this.updateStateFromInput(inputName, 0);
-                } else {
-                    const value = parseFloat(sanitizeInput(inputValue)) || 0;
-                    this.updateStateFromInput(inputName, value);
-                }
-                this.debouncedCalculate();
-            });
-        });
-
-        // Risk percentage
-        this.elements.inputs.riskPercentage.addEventListener('input', (e) => {
-            const inputValue = e.target.value.trim();
-            
-            if (inputValue === '') {
-                this.updateStateFromInput('riskPercentage', 1);
-                this.updateActiveRiskButton(1);
-            } else {
-                const value = parseFloat(inputValue) || 1;
-                this.updateStateFromInput('riskPercentage', value);
-                this.updateActiveRiskButton(value);
-            }
-            this.debouncedCalculate();
-        });
-
-        // NEW: Max Account Risk input handler
-        this.elements.inputs.maxAccountRisk.addEventListener('input', (e) => {
-            const inputValue = e.target.value.trim();
-            
-            if (inputValue === '') {
-                this.updateStateFromInput('maxAccountRisk', null); // null = no limit
-            } else {
-                const value = parseFloat(inputValue);
-                if (!isNaN(value) && value > 0) {
-                    this.updateStateFromInput('maxAccountRisk', value);
-                } else {
-                    this.updateStateFromInput('maxAccountRisk', null);
-                }
-            }
-            this.debouncedCalculate();
-        });
-    }
-
-    setupControlHandlers() {
-        // Risk buttons
-        this.elements.controls.riskButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const value = parseFloat(button.getAttribute('data-value'));
-                this.elements.inputs.riskPercentage.value = value;
-                this.updateStateFromInput('riskPercentage', value);
-                this.updateActiveRiskButton(value);
-                this.calculate();
-            });
-        });
-
-        // Clear button
-        this.elements.controls.clearButton.addEventListener('click', () => {
-            this.clearAll();
-        });
-
-        // Info toggle
-        this.elements.controls.infoButton.addEventListener('click', () => {
-            this.toggleInfo();
-        });
-
-        // Scenarios toggles
-        this.elements.controls.scenariosButton.addEventListener('click', () => {
-            this.toggleScenarios();
-        });
-
-        this.elements.controls.quickScenariosButton.addEventListener('click', () => {
-            this.toggleScenarios(true);
-        });
-
-        //
+}
