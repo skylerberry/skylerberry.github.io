@@ -332,25 +332,13 @@ body.dark-mode .journal-section {
 }
 
 .result-value {
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: var(--text-color);
-    text-align: right;
-    padding: 0.5rem;
-    word-break: break-word;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--theme-color);
 }
 
-.result-value.exceeded {
-    text-decoration: line-through;
-    color: var(--error-color);
-    font-weight: bold;
-}
-
-.result-value.exceeded::after {
-    content: attr(data-capped);
-    color: var(--error-color);
-    font-weight: bold;
-    margin-left: 0.5rem;
+.result-value.large {
+    font-size: 26px;
 }
 
 .result-value.trim {
