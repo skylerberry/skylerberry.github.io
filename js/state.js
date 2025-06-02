@@ -6,7 +6,6 @@ export class AppState {
                 inputs: {
                     accountSize: 0,
                     riskPercentage: 1,
-                    maxAccountRisk: null, // NEW FIELD - null means no limit set
                     entryPrice: 0,
                     stopLossPrice: 0,
                     targetPrice: 0
@@ -26,8 +25,7 @@ export class AppState {
                 },
                 validation: {
                     errors: [],
-                    isValid: true,
-                    exceedsMaxRisk: false // NEW - tracks if position exceeds max risk
+                    isValid: true
                 }
             },
             journal: {
@@ -174,7 +172,6 @@ export class AppState {
             // Input data
             accountSize: inputs.accountSize,
             riskPercentage: inputs.riskPercentage,
-            maxAccountRisk: inputs.maxAccountRisk, // NEW
             entryPrice: inputs.entryPrice,
             stopLossPrice: inputs.stopLossPrice,
             targetPrice: inputs.targetPrice,
@@ -190,8 +187,7 @@ export class AppState {
             notes: '',
             outcome: 'pending', // pending, win, loss
             actualExit: null,
-            actualPnL: null,
-            exceedsMaxRisk: this.state.calculator.validation.exceedsMaxRisk // NEW
+            actualPnL: null
         };
     }
 
@@ -207,9 +203,7 @@ export class AppState {
         return Object.values(inputs).some((value, index) => {
             // Skip riskPercentage with default value of 1
             if (index === 1 && value === 1) return false;
-            // Skip maxAccountRisk if null (no limit set)
-            if (index === 2 && value === null) return false;
-            return value !== '' && value !== 0 && value !== null;
+            return value !== '' && value !== 0;
         });
     }
 
