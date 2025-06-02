@@ -3,6 +3,7 @@
     --theme-color: #1CA1F2;
     --trim-color: #f59e0b;
     --profit-color: #28a745;
+    --danger-color: #dc3545; /* NEW: For risk warnings */
     --text-primary: #374151;
     --text-secondary: #6b7280;
     /* Spacing scaled up by ~10% */
@@ -314,6 +315,7 @@ body.dark-mode .journal-section {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
     border-left: 4px solid var(--theme-color);
+    transition: all 0.2s ease; /* NEW: For smooth transitions */
 }
 
 .result-card.full-width {
@@ -323,6 +325,18 @@ body.dark-mode .journal-section {
 
 .five-r-card {
     margin-top: 4px;
+}
+
+/* NEW: Risk Warning Styles */
+.result-card.risk-warning {
+    border-left-color: var(--danger-color);
+    background-color: #fff5f5;
+    animation: riskPulse 2s ease-in-out;
+}
+
+@keyframes riskPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
 }
 
 .result-label {
@@ -343,6 +357,25 @@ body.dark-mode .journal-section {
 
 .result-value.trim {
     color: var(--trim-color);
+}
+
+/* NEW: Risk Exceeded Display Styles */
+.risk-exceeded {
+    position: relative;
+    display: inline-block;
+}
+
+.risk-exceeded .original-value {
+    text-decoration: line-through;
+    text-decoration-color: var(--danger-color);
+    text-decoration-thickness: 3px;
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.risk-exceeded .corrected-value {
+    color: var(--danger-color);
+    font-weight: bold;
 }
 
 .trim-tag {
@@ -639,6 +672,12 @@ body.dark-mode .results-section {
 
 body.dark-mode .result-card {
     background-color: #1f2937;
+}
+
+/* NEW: Dark mode risk warning */
+body.dark-mode .result-card.risk-warning {
+    background-color: #2d1b1b;
+    border-left-color: var(--danger-color);
 }
 
 body.dark-mode .result-label {
