@@ -1,15 +1,25 @@
 // Journal functionality - prepared for implementation
-import { formatCurrency, formatDate, formatPercentage, STORAGE_KEYS } from './utils.js';
+import { formatCurrency, formatDate, formatPercentage, exportToCSV } from './utils.js';
 
 export class Journal {
     constructor(appState) {
         this.state = appState;
         this.element = document.querySelector('.journal-section');
+        this.saveButton = document.getElementById('saveTradeButton');
+        this.form = {
+            symbol: document.getElementById('journalSymbol'),
+            notes: document.getElementById('journalNotes'),
+            outcome: document.getElementById('journalOutcome')
+        };
+        this.addEntryButton = document.getElementById('addJournalEntryButton');
+        this.exportButton = document.getElementById('exportJournalButton');
+        this.journalList = document.getElementById('journalList');
+        this.journalStats = document.getElementById('journalStats');
         this.isInitialized = false;
     }
 
     init() {
-        console.log('📝 Journal module loaded (placeholder)');
+        console.log('📝 Journal module loaded');
 
         // Set up event listeners for when we implement the journal
         this.state.on('calculatorResultsChanged', (results) => {
@@ -17,20 +27,47 @@ export class Journal {
             this.onCalculatorResultsChanged(results);
         });
 
-        this.state.on('journalEntryAdded', (entry) => {
-            console.log('📝 Journal entry added:', entry);
+        this.state.on('journalEntryAdded', () => {
+            this.renderJournalList();
+            this.renderJournalStats();
         });
+        this.state.on('journalEntryDeleted', () => {
+            this.renderJournalList();
+            this.renderJournalStats();
+        });
+        this.state.on('journalEntryUpdated', () => {
+            this.renderJournalList();
+            this.renderJournalStats();
+        });
+        this.state.on('journalStatsUpdated', () => {
+            this.renderJournalStats();
+        });
+
+        if (this.saveButton) {
+            this.saveButton.addEventListener('click', () => {
+                this.state.setActiveSection('journal');
+            });
+        }
+
+        if (this.addEntryButton) {
+            this.addEntryButton.addEventListener('click', () => this.saveCurrentTrade());
+        }
+
+        if (this.exportButton) {
+            this.exportButton.addEventListener('click', () => this.exportJournal());
+        }
+
+        // Initial render with any saved entries
+        this.renderJournalList();
+        this.renderJournalStats();
 
         this.isInitialized = true;
     }
 
     onCalculatorResultsChanged(results) {
-        // Placeholder: This is where we'd enable/disable the "Save Trade" button
-        // based on whether we have valid calculation results
         const hasValidResults = results.shares !== '-' && results.positionSize !== '-';
-
-        if (hasValidResults) {
-            console.log('✅ Calculator has valid results - trade can be saved to journal');
+        if (this.saveButton) {
+            this.saveButton.disabled = !hasValidResults;
         }
     }
 
@@ -38,13 +75,21 @@ export class Journal {
 
     saveCurrentTrade() {
         const tradeData = this.state.captureTradeData();
-        console.log('💾 Would save trade:', tradeData);
+        tradeData.symbol = this.form.symbol.value.trim();
+        tradeData.notes = this.form.notes.value.trim();
+        tradeData.outcome = this.form.outcome.value;
 
-        // Future implementation:
-        // - Show modal to add symbol, notes, etc.
-        // - Add entry to journal
-        // - Update stats
+        const validation = this.validateJournalEntry(tradeData);
+        if (!validation.isValid) {
+            alert(validation.errors.join('\n'));
+            return null;
+        }
 
+        this.state.addJournalEntry(tradeData);
+        this.form.symbol.value = '';
+        this.form.notes.value = '';
+        this.form.outcome.value = 'pending';
+        this.saveButton.disabled = true;
         return tradeData;
     }
 
@@ -70,12 +115,11 @@ export class Journal {
 
     exportJournal() {
         const entries = this.getJournalEntries();
-        console.log('📊 Would export journal:', entries);
-
-        // Future implementation:
-        // - Format data for CSV/Excel
-        // - Trigger download
-
+        if (entries.length === 0) {
+            alert('No journal entries to export.');
+            return;
+        }
+        exportToCSV(entries, 'journal.csv');
         return entries;
     }
 
@@ -119,11 +163,44 @@ export class Journal {
     // Future UI methods (placeholders)
 
     renderJournalList() {
-        console.log('🎨 Would render journal list');
+        if (!this.journalList) return;
+        const entries = this.getJournalEntries();
+        this.journalList.innerHTML = '';
+        if (entries.length === 0) {
+            this.journalList.textContent = 'No entries yet.';
+            return;
+        }
+        entries.forEach(entry => {
+            const display = this.formatEntryForDisplay(entry);
+            const card = document.createElement('div');
+            card.className = 'journal-card';
+            card.innerHTML = `
+                <div><strong>${display.symbol}</strong> - ${display.formattedDate}</div>
+                <div>Position Size: ${display.formattedPositionSize}, Risk: ${display.formattedRisk}</div>
+                <div>Outcome: ${entry.outcome}</div>
+            `;
+            const delBtn = document.createElement('button');
+            delBtn.className = 'journal-button';
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', () => this.state.deleteJournalEntry(entry.id));
+            card.appendChild(delBtn);
+            this.journalList.appendChild(card);
+        });
     }
 
     renderJournalStats() {
-        console.log('📊 Would render journal stats');
+        if (!this.journalStats) return;
+        const stats = this.getJournalStats();
+        this.journalStats.innerHTML = '';
+        const statsCard = document.createElement('div');
+        statsCard.className = 'journal-card';
+        statsCard.innerHTML = `
+            <div>Total Trades: ${stats.totalTrades}</div>
+            <div>Win Rate: ${stats.winRate}%</div>
+            <div>Avg Return: ${formatCurrency(stats.avgReturn)}</div>
+            <div>Total PnL: ${formatCurrency(stats.totalPnL)}</div>
+        `;
+        this.journalStats.appendChild(statsCard);
     }
 
     showAddTradeModal() {

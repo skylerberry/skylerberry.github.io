@@ -24,6 +24,12 @@
             </label>
         </div>
 
+        <!-- Section Toggle -->
+        <div class="section-toggle">
+            <button type="button" id="calculatorTab" class="toggle-button active">Calculator</button>
+            <button type="button" id="journalTab" class="toggle-button">Trade Journal</button>
+        </div>
+
         <!-- Main Calculator Section -->
         <section class="calculator-section" data-section="calculator">
             <div class="grid">
@@ -97,6 +103,8 @@
             </div>
 
             <button type="button" id="clearButton" class="clear-button">Clear Calculator</button>
+
+            <button type="button" id="saveTradeButton" class="journal-button" disabled>Save Trade to Journal</button>
 
             <!-- Calculator Results -->
             <div class="calculator-output">
@@ -235,13 +243,35 @@
             </div>
         </section>
 
-        <!-- Journal Section Placeholder -->
+        <!-- Journal Section -->
         <section class="journal-section hidden" data-section="journal" aria-hidden="true">
             <h2 class="section-title">Trade Journal</h2>
-            <!-- Journal UI will be added here -->
-            <div class="journal-placeholder">
-                <p>Journal feature coming soon...</p>
+
+            <div class="journal-form">
+                <div class="input-group">
+                    <label class="input-label" for="journalSymbol">Symbol</label>
+                    <input type="text" id="journalSymbol" class="journal-input" placeholder="e.g. AAPL">
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="journalOutcome">Outcome</label>
+                    <select id="journalOutcome" class="journal-input">
+                        <option value="pending">Pending</option>
+                        <option value="win">Win</option>
+                        <option value="loss">Loss</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="journalNotes">Notes</label>
+                    <textarea id="journalNotes" class="journal-input" rows="3" placeholder="Optional notes"></textarea>
+                </div>
+                <div class="input-group">
+                    <button type="button" id="addJournalEntryButton" class="journal-button">Add Entry</button>
+                    <button type="button" id="exportJournalButton" class="journal-button">Export CSV</button>
+                </div>
             </div>
+
+            <div id="journalStats" class="journal-stats"></div>
+            <div id="journalList" class="journal-list"></div>
         </section>
 
         <!-- Footer -->
