@@ -24,13 +24,49 @@ class App {
         // Initialize journal (placeholder for now)
         this.journal.init();
 
-        // Set up any global event listeners
+        // Set up section toggle and global event listeners
+        this.setupSectionToggle();
         this.setupGlobalEvents();
 
         // Initial calculation
         this.calculator.calculate();
 
         console.log('📊 Stock Trading Calculator initialized');
+    }
+
+    setupSectionToggle() {
+        const sections = {
+            calculator: document.querySelector('.calculator-section'),
+            journal: document.querySelector('.journal-section')
+        };
+        const calculatorTab = document.getElementById('calculatorTab');
+        const journalTab = document.getElementById('journalTab');
+
+        if (calculatorTab) {
+            calculatorTab.addEventListener('click', () => this.state.setActiveSection('calculator'));
+        }
+        if (journalTab) {
+            journalTab.addEventListener('click', () => this.state.setActiveSection('journal'));
+        }
+
+        this.state.on('activeSectionChanged', ({ oldSection, newSection }) => {
+            if (sections[oldSection]) {
+                sections[oldSection].classList.add('hidden');
+                sections[oldSection].setAttribute('aria-hidden', 'true');
+            }
+            if (sections[newSection]) {
+                sections[newSection].classList.remove('hidden');
+                sections[newSection].setAttribute('aria-hidden', 'false');
+            }
+            const oldTab = document.getElementById(`${oldSection}Tab`);
+            const newTab = document.getElementById(`${newSection}Tab`);
+            if (oldTab) oldTab.classList.remove('active');
+            if (newTab) newTab.classList.add('active');
+        });
+
+        // Ensure initial visibility
+        const initial = this.state.ui.activeSection;
+        this.state.emit('activeSectionChanged', { oldSection: initial, newSection: initial });
     }
 
     setupGlobalEvents() {
