@@ -108,15 +108,9 @@ export class Calculator {
                 e.target.setSelectionRange(newCursorPosition, newCursorPosition);
                 this.updateStateFromInput('accountSize', converted);
             } else {
-                // For regular numbers, apply comma formatting as the user types
+                // For regular numbers, don't format during typing to allow decimal input
                 const numberValue = parseFloat(sanitizeInput(inputValue));
                 if (!isNaN(numberValue)) {
-                    const cursorPosition = e.target.selectionStart;
-                    const originalLength = e.target.value.length;
-                    e.target.value = formatNumber(numberValue);
-                    const newLength = e.target.value.length;
-                    const newCursorPosition = cursorPosition + (newLength - originalLength);
-                    e.target.setSelectionRange(newCursorPosition, newCursorPosition);
                     this.updateStateFromInput('accountSize', numberValue);
                 } else {
                     this.updateStateFromInput('accountSize', 0);
