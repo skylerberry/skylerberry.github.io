@@ -660,17 +660,6 @@ body.dark-mode .quick-scenarios-button:hover {
     border-color: rgba(28, 161, 242, 0.4);
 }
 
-.heart-icon {
-    width: 14px;
-    height: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    top: -1px;
-    fill: #ff6b6b;
-}
-
 /* Profit Section */
 .profit-section {
     margin-top: var(--spacing-md);
