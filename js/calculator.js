@@ -334,8 +334,8 @@ export class Calculator {
         requestAnimationFrame(() => {
             Object.entries(results).forEach(([key, value]) => {
                 if (this.elements.results[key]) {
-                    if (key === 'percentOfAccount' && typeof value === 'string' && value.includes('<span>')) {
-                        // Handle HTML content for percentOfAccount
+                    if (key === 'percentOfAccount') {
+                        // Always use innerHTML for percentOfAccount to handle HTML spans
                         this.elements.results[key].innerHTML = value;
                     } else {
                         updateElement(this.elements.results[key], value);
