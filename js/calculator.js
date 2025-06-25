@@ -47,10 +47,7 @@ export class Calculator {
                 profitPerShare: document.getElementById('profitPerShareValue'),
                 totalProfit: document.getElementById('totalProfitValue'),
                 roi: document.getElementById('roiValue'),
-                riskReward: document.getElementById('riskRewardValue'),
-                limitedAccountDisplay: document.getElementById('limitedAccountDisplay'),
-                originalPercentage: document.getElementById('originalPercentage'),
-                limitedPercentage: document.getElementById('limitedPercentage')
+                riskReward: document.getElementById('riskRewardValue')
             },
             errors: {
                 stopLoss: document.getElementById('stopLossError'),
@@ -288,15 +285,17 @@ export class Calculator {
         const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
         const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
         
-        // Determine if position was limited
-        const isLimited = limitedPositionSize < originalPositionSize;
+        // Determine if position was actually limited (only show red if we had to reduce it)
+        const isActuallyLimited = limitedPositionSize < originalPositionSize;
 
         const results = {
             shares: formatNumber(limitedShares),
             positionSize: formatCurrency(limitedPositionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
             totalRisk: formatCurrency(limitedShares * riskPerShare),
-            percentOfAccount: formatPercentage(limitedPercentOfAccount),
+            percentOfAccount: isActuallyLimited 
+                ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
+                : formatPercentage(limitedPercentOfAccount),
             rMultiple: inputs.targetPrice > inputs.entryPrice
                 ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
                 : DEFAULTS.R_MULTIPLE_EMPTY,
@@ -327,7 +326,7 @@ export class Calculator {
         // Update state and UI
         this.state.updateCalculatorResults(results);
         this.renderResults(results);
-        this.renderLimitedAccountDisplay(isLimited, originalPercentOfAccount, limitedPercentOfAccount);
+        this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
     }
 
@@ -335,7 +334,12 @@ export class Calculator {
         requestAnimationFrame(() => {
             Object.entries(results).forEach(([key, value]) => {
                 if (this.elements.results[key]) {
-                    updateElement(this.elements.results[key], value);
+                    if (key === 'percentOfAccount' && typeof value === 'string' && value.includes('<span>')) {
+                        // Handle HTML content for percentOfAccount
+                        this.elements.results[key].innerHTML = value;
+                    } else {
+                        updateElement(this.elements.results[key], value);
+                    }
                 }
             });
         });
@@ -446,9 +450,6 @@ export class Calculator {
         // Reset results and clear errors
         this.resetResults();
         this.displayErrors([]);
-        
-        // Clear limited display styling
-        this.renderLimitedAccountDisplay(false, 0, 0);
 
         console.log('🧹 Calculator cleared');
     }
@@ -496,19 +497,12 @@ export class Calculator {
         }
     }
 
-    renderLimitedAccountDisplay(isLimited, originalPercentOfAccount, limitedPercentOfAccount) {
+    renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount) {
         const percentOfAccountCard = this.elements.results.percentOfAccount.closest('.result-card');
         const positionSizeCard = this.elements.results.positionSize.closest('.result-card');
         
-        // Show/hide the limited display
-        toggleClass(this.elements.results.limitedAccountDisplay, 'hidden', !isLimited);
-        
-        // Update the percentage values for side-by-side display
-        updateElement(this.elements.results.originalPercentage, `${formatPercentage(originalPercentOfAccount)}`);
-        updateElement(this.elements.results.limitedPercentage, `${formatPercentage(limitedPercentOfAccount)}`);
-        
-        // Apply red styling to both cards when limited
-        toggleClass(percentOfAccountCard, 'limited', isLimited);
-        toggleClass(positionSizeCard, 'limited', isLimited);
+        // Apply red styling to both cards only when actually limited
+        toggleClass(percentOfAccountCard, 'limited', isActuallyLimited);
+        toggleClass(positionSizeCard, 'limited', isActuallyLimited);
     }
 }

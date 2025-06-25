@@ -947,29 +947,6 @@ body.dark-mode .journal-input {
     color: white;
 }
 
-.limited-account-display {
-    margin-top: 8px;
-    padding: 8px 12px;
-    background-color: rgba(239, 68, 68, 0.1);
-    border-radius: 6px;
-    border-left: 3px solid #ef4444;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.original-percentage {
-    font-size: 14px;
-    color: var(--text-secondary);
-    text-decoration: line-through;
-}
-
-.limited-percentage {
-    font-size: 16px;
-    font-weight: 600;
-    color: #ef4444;
-}
-
 .result-card.limited {
     border-left-color: #ef4444;
 }
@@ -978,9 +955,15 @@ body.dark-mode .journal-input {
     color: #ef4444;
 }
 
-body.dark-mode .risk-button.active {
-    background-color: var(--theme-color);
-    color: white;
+.original-percentage {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.limited-percentage {
+    color: #ef4444;
+    font-weight: 600;
 }
 
 body.dark-mode .max-account-button {
@@ -991,12 +974,4 @@ body.dark-mode .max-account-button {
 body.dark-mode .max-account-button.active {
     background-color: var(--theme-color);
     color: white;
-}
-
-body.dark-mode .limited-account-display {
-    background-color: rgba(239, 68, 68, 0.15);
-}
-
-body.dark-mode .original-percentage {
-    color: #9ca3af;
 }
