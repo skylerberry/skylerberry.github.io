@@ -290,7 +290,9 @@ export class Calculator {
 
         const results = {
             shares: formatNumber(limitedShares),
-            positionSize: formatCurrency(limitedPositionSize),
+            positionSize: isActuallyLimited 
+                ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
+                : formatCurrency(limitedPositionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
             totalRisk: formatCurrency(limitedShares * riskPerShare),
             percentOfAccount: isActuallyLimited 
@@ -334,8 +336,8 @@ export class Calculator {
         requestAnimationFrame(() => {
             Object.entries(results).forEach(([key, value]) => {
                 if (this.elements.results[key]) {
-                    if (key === 'percentOfAccount') {
-                        // Always use innerHTML for percentOfAccount to handle HTML spans
+                    if (key === 'percentOfAccount' || key === 'positionSize') {
+                        // Use innerHTML for fields that may contain HTML spans
                         this.elements.results[key].innerHTML = value;
                     } else {
                         updateElement(this.elements.results[key], value);
