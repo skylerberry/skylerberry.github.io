@@ -30,6 +30,7 @@ export class Calculator {
             inputs: {
                 accountSize: document.getElementById('accountSize'),
                 riskPercentage: document.getElementById('riskPercentage'),
+                maxAccountPercentage: document.getElementById('maxAccountPercentage'),
                 entryPrice: document.getElementById('entryPrice'),
                 stopLossPrice: document.getElementById('stopLossPrice'),
                 targetPrice: document.getElementById('targetPrice')
@@ -46,7 +47,10 @@ export class Calculator {
                 profitPerShare: document.getElementById('profitPerShareValue'),
                 totalProfit: document.getElementById('totalProfitValue'),
                 roi: document.getElementById('roiValue'),
-                riskReward: document.getElementById('riskRewardValue')
+                riskReward: document.getElementById('riskRewardValue'),
+                limitedAccountDisplay: document.getElementById('limitedAccountDisplay'),
+                originalPercentage: document.getElementById('originalPercentage'),
+                limitedPercentage: document.getElementById('limitedPercentage')
             },
             errors: {
                 stopLoss: document.getElementById('stopLossError'),
@@ -54,6 +58,7 @@ export class Calculator {
             },
             controls: {
                 riskButtons: document.querySelectorAll('.risk-button'),
+                maxAccountButtons: document.querySelectorAll('.max-account-button'),
                 clearButton: document.getElementById('clearButton'),
                 infoButton: document.getElementById('infoButton'),
                 infoIcon: document.getElementById('infoIcon'),
@@ -164,6 +169,22 @@ export class Calculator {
             }
             this.debouncedCalculate();
         });
+
+        // Max account percentage - handle empty but default to 100
+        this.elements.inputs.maxAccountPercentage.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            
+            if (inputValue === '') {
+                // Keep it empty in the UI, but use 100 for calculations
+                this.updateStateFromInput('maxAccountPercentage', 100);
+                this.updateActiveMaxAccountButton(100);
+            } else {
+                const value = parseFloat(inputValue) || 100;
+                this.updateStateFromInput('maxAccountPercentage', value);
+                this.updateActiveMaxAccountButton(value);
+            }
+            this.debouncedCalculate();
+        });
     }
 
     setupControlHandlers() {
@@ -174,6 +195,17 @@ export class Calculator {
                 this.elements.inputs.riskPercentage.value = value;
                 this.updateStateFromInput('riskPercentage', value);
                 this.updateActiveRiskButton(value);
+                this.calculate();
+            });
+        });
+
+        // Max account buttons
+        this.elements.controls.maxAccountButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const value = parseFloat(button.getAttribute('data-value'));
+                this.elements.inputs.maxAccountPercentage.value = value;
+                this.updateStateFromInput('maxAccountPercentage', value);
+                this.updateActiveMaxAccountButton(value);
                 this.calculate();
             });
         });
@@ -210,9 +242,16 @@ export class Calculator {
     }
 
     updateActiveRiskButton(value) {
-        this.elements.controls.riskButtons.forEach(btn => {
-            const isActive = parseFloat(btn.getAttribute('data-value')) === value;
-            toggleClass(btn, 'active', isActive);
+        this.elements.controls.riskButtons.forEach(button => {
+            const buttonValue = parseFloat(button.getAttribute('data-value'));
+            button.classList.toggle('active', Math.abs(buttonValue - value) < 0.01);
+        });
+    }
+
+    updateActiveMaxAccountButton(value) {
+        this.elements.controls.maxAccountButtons.forEach(button => {
+            const buttonValue = parseFloat(button.getAttribute('data-value'));
+            button.classList.toggle('active', Math.abs(buttonValue - value) < 0.01);
         });
     }
 
@@ -239,14 +278,25 @@ export class Calculator {
         // Perform calculations
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
         const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
-        const positionSize = calculatePositionSize(shares, inputs.entryPrice);
+        const originalPositionSize = calculatePositionSize(shares, inputs.entryPrice);
+        const originalPercentOfAccount = (originalPositionSize / inputs.accountSize) * 100;
+        
+        // Apply max account percentage limit
+        const maxAccountPercent = inputs.maxAccountPercentage || 100;
+        const maxPositionSize = (inputs.accountSize * maxAccountPercent) / 100;
+        const limitedPositionSize = Math.min(originalPositionSize, maxPositionSize);
+        const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
+        const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
+        
+        // Determine if position was limited
+        const isLimited = limitedPositionSize < originalPositionSize;
 
         const results = {
-            shares: formatNumber(shares),
-            positionSize: formatCurrency(positionSize),
+            shares: formatNumber(limitedShares),
+            positionSize: formatCurrency(limitedPositionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-            totalRisk: formatCurrency(shares * riskPerShare),
-            percentOfAccount: formatPercentage((positionSize / inputs.accountSize) * 100),
+            totalRisk: formatCurrency(limitedShares * riskPerShare),
+            percentOfAccount: formatPercentage(limitedPercentOfAccount),
             rMultiple: inputs.targetPrice > inputs.entryPrice
                 ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
                 : DEFAULTS.R_MULTIPLE_EMPTY,
@@ -258,9 +308,9 @@ export class Calculator {
 
         if (hasValidTargetPrice) {
             const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-            const totalProfit = profitPerShare * shares;
-            const roi = calculateROI(totalProfit, positionSize);
-            const riskReward = totalProfit / (shares * riskPerShare);
+            const totalProfit = profitPerShare * limitedShares;
+            const roi = calculateROI(totalProfit, limitedPositionSize);
+            const riskReward = totalProfit / (limitedShares * riskPerShare);
 
             Object.assign(results, {
                 profitPerShare: formatCurrency(profitPerShare),
@@ -277,6 +327,7 @@ export class Calculator {
         // Update state and UI
         this.state.updateCalculatorResults(results);
         this.renderResults(results);
+        this.renderLimitedAccountDisplay(isLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
     }
 
@@ -379,18 +430,25 @@ export class Calculator {
             if (key === 'riskPercentage') {
                 input.value = DEFAULTS.RISK_PERCENTAGE;
                 this.updateStateFromInput(key, DEFAULTS.RISK_PERCENTAGE);
+            } else if (key === 'maxAccountPercentage') {
+                input.value = 100;
+                this.updateStateFromInput(key, 100);
             } else {
                 input.value = '';
                 this.updateStateFromInput(key, 0);
             }
         });
 
-        // Reset risk buttons
+        // Reset buttons
         this.updateActiveRiskButton(DEFAULTS.RISK_PERCENTAGE);
+        this.updateActiveMaxAccountButton(100);
 
         // Reset results and clear errors
         this.resetResults();
         this.displayErrors([]);
+        
+        // Clear limited display styling
+        this.renderLimitedAccountDisplay(false, 0, 0);
 
         console.log('🧹 Calculator cleared');
     }
@@ -436,5 +494,21 @@ export class Calculator {
             
             console.log(`💰 Added profit $${formatNumber(profit)} to account. New balance: $${formatNumber(newAccountSize)}`);
         }
+    }
+
+    renderLimitedAccountDisplay(isLimited, originalPercentOfAccount, limitedPercentOfAccount) {
+        const percentOfAccountCard = this.elements.results.percentOfAccount.closest('.result-card');
+        const positionSizeCard = this.elements.results.positionSize.closest('.result-card');
+        
+        // Show/hide the limited display
+        toggleClass(this.elements.results.limitedAccountDisplay, 'hidden', !isLimited);
+        
+        // Update the percentage values for side-by-side display
+        updateElement(this.elements.results.originalPercentage, `${formatPercentage(originalPercentOfAccount)}`);
+        updateElement(this.elements.results.limitedPercentage, `${formatPercentage(limitedPercentOfAccount)}`);
+        
+        // Apply red styling to both cards when limited
+        toggleClass(percentOfAccountCard, 'limited', isLimited);
+        toggleClass(positionSizeCard, 'limited', isLimited);
     }
 }

@@ -6,6 +6,7 @@ export class AppState {
                 inputs: {
                     accountSize: 0,
                     riskPercentage: 1,
+                    maxAccountPercentage: 100,
                     entryPrice: 0,
                     stopLossPrice: 0,
                     targetPrice: 0
@@ -172,6 +173,7 @@ export class AppState {
             // Input data
             accountSize: inputs.accountSize,
             riskPercentage: inputs.riskPercentage,
+            maxAccountPercentage: inputs.maxAccountPercentage,
             entryPrice: inputs.entryPrice,
             stopLossPrice: inputs.stopLossPrice,
             targetPrice: inputs.targetPrice,

@@ -60,6 +60,22 @@
                             <span class="input-suffix">%</span>
                         </div>
                     </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="maxAccountPercentage">Max % of Account</label>
+                        <div class="max-account-buttons">
+                            <button type="button" class="max-account-button" data-value="10">10%</button>
+                            <button type="button" class="max-account-button" data-value="20">20%</button>
+                            <button type="button" class="max-account-button" data-value="50">50%</button>
+                            <button type="button" class="max-account-button" data-value="75">75%</button>
+                            <button type="button" class="max-account-button active" data-value="100">100%</button>
+                        </div>
+                        <div class="input-container">
+                            <input type="number" id="maxAccountPercentage" class="number-input number-input-pct" value="100" min="0" max="100" step="1" required>
+                            <span class="input-suffix">%</span>
+                        </div>
+                        <div class="helper-text">Limits the maximum position size as a percentage of your account</div>
+                    </div>
                 </div>
 
                 <!-- Trade Details -->
@@ -122,6 +138,10 @@
                         <div class="result-card">
                             <div class="result-label">% of Account</div>
                             <div class="result-value" id="percentOfAccountValue">-</div>
+                            <div class="limited-account-display hidden" id="limitedAccountDisplay">
+                                <div class="original-percentage" id="originalPercentage">-</div>
+                                <div class="limited-percentage" id="limitedPercentage">-</div>
+                            </div>
                         </div>
                         <div class="result-card">
                             <div class="result-label">R Multiple</div>
