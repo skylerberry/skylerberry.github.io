@@ -96,27 +96,69 @@ body {
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.discord-toggle-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background-color: #f8fafc;
+  border: none;
+  color: var(--theme-color);
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.discord-toggle-button:hover {
+  background-color: #f1f5f9;
+}
+
+.discord-toggle-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.discord-toggle-button[aria-expanded="true"] .discord-toggle-icon {
+  transform: rotate(45deg);
+}
+
+.discord-alert-content {
+  padding: var(--spacing-md);
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+}
+
+.discord-alert-content.hidden {
+  display: none;
 }
 
 .discord-input-container {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  position: relative;
 }
 
 .discord-textarea {
   flex: 1;
   min-height: 80px;
-  padding: 12px 16px;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--input-background);
-  color: var(--text-color);
-  font-family: inherit;
+  padding: var(--spacing-sm);
+  border: 1px solid #d1d5db;
+  border-radius: var(--border-radius);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-size: 14px;
-  line-height: 1.4;
+  font-family: inherit;
   resize: vertical;
-  transition: border-color 0.2s ease;
+  line-height: 1.4;
 }
 
 .discord-textarea:focus {
@@ -131,29 +173,27 @@ body {
 }
 
 .parse-alert-button {
-  padding: 12px 20px;
-  background: var(--primary-color);
+  align-self: flex-start;
+  background-color: var(--theme-color);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
+  border-radius: var(--border-radius);
+  padding: 8px 16px;
+  font-weight: 500;
   cursor: pointer;
+  font-size: 14px;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  min-height: 80px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
 }
 
 .parse-alert-button:hover {
-  background: var(--primary-color-hover);
-  transform: translateY(-1px);
+  background-color: var(--primary-color-hover);
 }
 
 .parse-alert-button:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .parse-alert-button:disabled {
@@ -969,133 +1009,45 @@ body.dark-mode .scenario-details {
   color: #9ca3af;
 }
 
-/* ==========================================================================
-   JOURNAL PLACEHOLDER STYLES
-   ========================================================================== */
-
-.journal-placeholder {
-  text-align: center;
-  padding: var(--spacing-lg);
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-body.dark-mode .journal-placeholder {
-  color: #9ca3af;
-}
-
-/* ==========================================================================
-   FUTURE JOURNAL STYLES (Prepared)
-   ========================================================================== */
-
-/* Journal components will use these base styles for consistency */
-.journal-card {
-  background-color: white;
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  border-left: 4px solid var(--journal-color);
-}
-
-.journal-button {
-  background-color: var(--journal-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  padding: 9px var(--spacing-md);
-  font-weight: 500;
-  cursor: pointer;
-  font-size: 15px;
-  transition: all 0.2s ease;
-}
-
-.journal-button:hover {
-  background-color: var(--journal-secondary);
-}
-
-.journal-input {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: 1px solid #d1d5db;
-  border-radius: var(--border-radius);
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 15px;
-  height: 40px;
-}
-
-.journal-input:focus {
-  border-color: var(--journal-color);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-}
-
-/* Dark mode journal styles */
-body.dark-mode .journal-card {
-  background-color: #1f2937;
-}
-
-body.dark-mode .journal-input {
-  background-color: #1f2937;
+/* Dark mode styles for Discord Alert Parser */
+body.dark-mode .discord-alert-section {
   border-color: #374151;
+}
+
+body.dark-mode .discord-toggle-button {
+  background-color: #1f2937;
+  color: var(--theme-color);
+}
+
+body.dark-mode .discord-toggle-button:hover {
+  background-color: #374151;
+}
+
+body.dark-mode .discord-alert-content {
+  background-color: #1f2937;
+  border-top-color: #374151;
+}
+
+body.dark-mode .discord-textarea {
+  background-color: #374151;
+  border-color: #4b5563;
   color: #e5e7eb;
 }
 
-.max-account-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+body.dark-mode .discord-textarea:focus {
+  border-color: var(--theme-color);
+  box-shadow: 0 0 0 2px rgba(28, 161, 242, 0.2);
 }
 
-.max-account-button {
-  padding: 9px 0;
-  background-color: #f3f4f6;
-  color: var(--text-primary);
-  border: none;
-  border-radius: var(--border-radius);
-  font-weight: 500;
-  cursor: pointer;
-  flex: 1;
-  min-width: 64px;
-  font-size: 15px;
-  transition: all 0.2s ease;
+body.dark-mode .discord-textarea::placeholder {
+  color: #9ca3af;
 }
 
-.max-account-button:focus {
-  outline: 2px solid var(--theme-color);
-  outline-offset: 2px;
-}
-
-.max-account-button.active {
+body.dark-mode .parse-alert-button {
   background-color: var(--theme-color);
   color: white;
 }
 
-.result-card.limited {
-  border-left-color: #ef4444;
-}
-
-.result-card.limited .result-value {
-  color: #ef4444;
-}
-
-.original-percentage {
-  text-decoration: line-through;
-  color: var(--text-secondary);
-  margin-right: 8px;
-}
-
-.limited-percentage {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-body.dark-mode .max-account-button {
-  background-color: #374151;
-  color: #d1d5db;
-}
-
-body.dark-mode .max-account-button.active {
-  background-color: var(--theme-color);
-  color: white;
+body.dark-mode .parse-alert-button:hover {
+  background-color: var(--primary-color-hover);
 }
