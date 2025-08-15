@@ -26,27 +26,33 @@
 
         <!-- Main Calculator Section -->
         <section class="calculator-section" data-section="calculator">
-            <!-- Added Discord Alert Parser section -->
+            <!-- Convert Discord Alert Parser to collapsible dropdown -->
             <div class="discord-alert-section">
-                <h2 class="section-title">Discord Alert Parser</h2>
-                <div class="input-group">
-                    <label class="input-label" for="discordAlert">Paste Discord Alert</label>
-                    <div class="discord-input-container">
-                        <textarea 
-                            id="discordAlert" 
-                            class="discord-textarea" 
-                            placeholder='Paste your Discord alert here, e.g.:
+                <button type="button" id="discordToggleButton" class="discord-toggle-button" aria-expanded="false">
+                    <span id="discordToggleIcon" class="discord-toggle-icon">+</span>
+                    Discord Alert Parser
+                </button>
+                
+                <div id="discordAlertContent" class="discord-alert-content hidden" role="region" aria-expanded="false">
+                    <div class="input-group">
+                        <label class="input-label" for="discordAlert">Paste Discord Alert</label>
+                        <div class="discord-input-container">
+                            <textarea 
+                                id="discordAlert" 
+                                class="discord-textarea" 
+                                placeholder='Paste your Discord alert here, e.g.:
 "Adding $UUUU shares @ $9.98
 Stop loss @ $9.38
 Risking 0.5%"'
-                            rows="3"
-                        ></textarea>
-                        <button type="button" id="parseAlertButton" class="parse-alert-button">
-                            📊 Parse & Fill
-                        </button>
+                                rows="4"
+                            ></textarea>
+                            <button type="button" id="parseAlertButton" class="parse-alert-button">
+                                📊 Parse & Fill
+                            </button>
+                        </div>
+                        <div class="helper-text">Automatically fills the calculator with data from your Discord trading alerts</div>
+                        <div id="parseAlertError" class="error-text hidden"></div>
                     </div>
-                    <div class="helper-text">Automatically fills the calculator with data from your Discord trading alerts</div>
-                    <div id="parseAlertError" class="error-text hidden"></div>
                 </div>
             </div>
 
@@ -194,7 +200,7 @@ Risking 0.5%"'
                             </div>
                             <div class="result-card profit-card">
                                 <div class="result-label">Risk:Reward Ratio</div>
-                                <div class="result-value profit" id="riskRewardValue">-</div>
+                                <div class="result-value-value" id="riskRewardValue">-</div>
                             </div>
                         </div>
                     </div>
