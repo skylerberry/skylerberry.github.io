@@ -69,6 +69,9 @@ export class Calculator {
         scenariosContent: document.getElementById("scenariosContent"),
         quickScenariosButton: document.getElementById("quickScenariosButton"),
         parseAlertButton: document.getElementById("parseAlertButton"), // Added parse alert button
+        discordToggleButton: document.getElementById("discordToggleButton"),
+        discordToggleIcon: document.getElementById("discordToggleIcon"),
+        discordAlertContent: document.getElementById("discordAlertContent"),
       },
       scenarios: {
         scenario01: document.getElementById("scenario-0-1"),
@@ -238,6 +241,12 @@ export class Calculator {
     if (this.elements.controls.addProfitButton) {
       this.elements.controls.addProfitButton.addEventListener("click", () => {
         this.addProfitToAccount()
+      })
+    }
+
+    if (this.elements.controls.discordToggleButton) {
+      this.elements.controls.discordToggleButton.addEventListener("click", () => {
+        this.toggleDiscordParser()
       })
     }
 
@@ -509,6 +518,13 @@ export class Calculator {
         })
       }, 100)
     }
+  }
+
+  toggleDiscordParser() {
+    const isHidden = this.elements.controls.discordAlertContent.classList.toggle("hidden")
+    updateElement(this.elements.controls.discordToggleIcon, isHidden ? "+" : "−")
+    setAttributes(this.elements.controls.discordToggleButton, { "aria-expanded": !isHidden })
+    setAttributes(this.elements.controls.discordAlertContent, { "aria-expanded": !isHidden })
   }
 
   addProfitToAccount() {
