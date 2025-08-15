@@ -26,6 +26,30 @@
 
         <!-- Main Calculator Section -->
         <section class="calculator-section" data-section="calculator">
+            <!-- Added Discord Alert Parser section -->
+            <div class="discord-alert-section">
+                <h2 class="section-title">Discord Alert Parser</h2>
+                <div class="input-group">
+                    <label class="input-label" for="discordAlert">Paste Discord Alert</label>
+                    <div class="discord-input-container">
+                        <textarea 
+                            id="discordAlert" 
+                            class="discord-textarea" 
+                            placeholder='Paste your Discord alert here, e.g.:
+"Adding $UUUU shares @ $9.98
+Stop loss @ $9.38
+Risking 0.5%"'
+                            rows="3"
+                        ></textarea>
+                        <button type="button" id="parseAlertButton" class="parse-alert-button">
+                            📊 Parse & Fill
+                        </button>
+                    </div>
+                    <div class="helper-text">Automatically fills the calculator with data from your Discord trading alerts</div>
+                    <div id="parseAlertError" class="error-text hidden"></div>
+                </div>
+            </div>
+
             <div class="grid">
                 <!-- Account Information -->
                 <div>
