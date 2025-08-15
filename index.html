@@ -109,6 +109,31 @@
                         <div class="helper-text">Should be above entry price</div>
                         <div id="targetPriceError" class="error-text hidden"></div>
                     </div>
+
+                    <!-- Trim Settings Section -->
+                    <div class="input-group">
+                        <h3 class="subsection-title">Trim Settings</h3>
+                        
+                        <div class="trim-controls">
+                            <div class="trim-input-row">
+                                <div class="trim-input-col">
+                                    <label class="input-label" for="trimRMultiple">R-Multiple to Trim</label>
+                                    <div class="input-container">
+                                        <input type="number" id="trimRMultiple" class="number-input" value="5" min="1" max="10" step="0.5">
+                                        <span class="input-suffix">R</span>
+                                    </div>
+                                </div>
+                                <div class="trim-input-col">
+                                    <label class="input-label" for="trimPercentage">% of Position to Trim</label>
+                                    <div class="input-container">
+                                        <input type="number" id="trimPercentage" class="number-input" value="50" min="10" max="100" step="5">
+                                        <span class="input-suffix">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="helper-text">Trim settings help you take partial profits at your target R-multiple</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -144,7 +169,10 @@
                             <div class="result-value" id="rMultipleValue">- R</div>
                         </div>
                         <div class="result-card full-width five-r-card">
-                            <div class="result-label">5R Target Price <span class="trim-tag">Trim Zone</span></div>
+                            <div class="result-label">
+                                <span id="trimRMultipleLabel">5R</span> Target Price 
+                                <span class="trim-tag">Trim <span id="trimPercentageLabel">50%</span></span>
+                            </div>
                             <div class="result-value trim" id="fiveRTargetValue">-</div>
                         </div>
                     </div>
