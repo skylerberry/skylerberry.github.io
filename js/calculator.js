@@ -1,22 +1,4 @@
-import {
-  formatCurrency,
-  formatNumber,
-  formatPercentage,
-  sanitizeInput,
-  convertShorthand,
-  debounce,
-  validateTradeInputs,
-  updateElement,
-  toggleClass,
-  setAttributes,
-  calculateShares,
-  calculateRiskPerShare,
-  calculatePositionSize,
-  calculateRMultiple,
-  calculateROI,
-  DEFAULTS,
-  RISK_LEVELS,
-} from "./utils.js"
+import { formatNumber, sanitizeInput, convertShorthand, debounce, updateElement, toggleClass } from "./utils.js"
 
 export class Calculator {
   constructor(appState) {
@@ -34,8 +16,6 @@ export class Calculator {
         entryPrice: document.getElementById("entryPrice"),
         stopLossPrice: document.getElementById("stopLossPrice"),
         targetPrice: document.getElementById("targetPrice"),
-        trimRMultiple: document.getElementById("trimRMultiple"),
-        trimPercentage: document.getElementById("trimPercentage"),
       },
       results: {
         shares: document.getElementById("sharesValue"),
@@ -50,8 +30,6 @@ export class Calculator {
         totalProfit: document.getElementById("totalProfitValue"),
         roi: document.getElementById("roiValue"),
         riskReward: document.getElementById("riskRewardValue"),
-        trimRMultipleLabel: document.getElementById("trimRMultipleLabel"),
-        trimPercentageLabel: document.getElementById("trimPercentageLabel"),
       },
       errors: {
         stopLoss: document.getElementById("stopLossError"),
@@ -84,7 +62,24 @@ export class Calculator {
     this.setupInputHandlers()
     this.setupControlHandlers()
 
+    this.addInitializationFeedback()
+
     console.log("🧮 Calculator initialized")
+  }
+
+  addInitializationFeedback() {
+    // Add a subtle animation to show the calculator is ready
+    const calculatorCards = document.querySelectorAll(".input-card, .results-card")
+    calculatorCards.forEach((card, index) => {
+      card.style.opacity = "0"
+      card.style.transform = "translateY(20px)"
+
+      setTimeout(() => {
+        card.style.transition = "opacity 0.5s ease, transform 0.5s ease"
+        card.style.opacity = "1"
+        card.style.transform = "translateY(0)"
+      }, index * 100)
+    })
   }
 
   setupInputHandlers() {
@@ -157,6 +152,15 @@ export class Calculator {
         }
         this.debouncedCalculate()
       })
+
+      this.elements.inputs[inputName].addEventListener("focus", (e) => {
+        e.target.parentElement.style.transform = "scale(1.02)"
+        e.target.parentElement.style.transition = "transform 0.2s ease"
+      })
+
+      this.elements.inputs[inputName].addEventListener("blur", (e) => {
+        e.target.parentElement.style.transform = "scale(1)"
+      })
     })
 
     // Risk percentage - handle empty but default to 1
@@ -190,24 +194,6 @@ export class Calculator {
       }
       this.debouncedCalculate()
     })
-
-    // Trim input handlers
-    ;["trimRMultiple", "trimPercentage"].forEach((inputName) => {
-      this.elements.inputs[inputName].addEventListener("input", (e) => {
-        const inputValue = e.target.value.trim()
-
-        if (inputValue === "") {
-          // Set defaults if empty
-          const defaultValue = inputName === "trimRMultiple" ? 5 : 50
-          this.updateStateFromInput(inputName, defaultValue)
-        } else {
-          const value = Number.parseFloat(inputValue) || (inputName === "trimRMultiple" ? 5 : 50)
-          this.updateStateFromInput(inputName, value)
-        }
-        this.updateTrimLabels()
-        this.debouncedCalculate()
-      })
-    })
   }
 
   setupControlHandlers() {
@@ -218,6 +204,8 @@ export class Calculator {
         this.elements.inputs.riskPercentage.value = value
         this.updateStateFromInput("riskPercentage", value)
         this.updateActiveRiskButton(value)
+
+        this.addButtonFeedback(button)
         this.calculate()
       })
     })
@@ -229,12 +217,15 @@ export class Calculator {
         this.elements.inputs.maxAccountPercentage.value = value
         this.updateStateFromInput("maxAccountPercentage", value)
         this.updateActiveMaxAccountButton(value)
+
+        this.addButtonFeedback(button)
         this.calculate()
       })
     })
 
     // Clear button
     this.elements.controls.clearButton.addEventListener("click", () => {
+      this.addButtonFeedback(this.elements.controls.clearButton)
       this.clearAll()
     })
 
@@ -255,299 +246,70 @@ export class Calculator {
     // Add profit button
     if (this.elements.controls.addProfitButton) {
       this.elements.controls.addProfitButton.addEventListener("click", () => {
+        this.addButtonFeedback(this.elements.controls.addProfitButton)
         this.addProfitToAccount()
       })
     }
   }
 
-  updateStateFromInput(key, value) {
-    this.state.updateCalculatorInput(key, value)
+  addButtonFeedback(button) {
+    button.style.transform = "scale(0.95)"
+    button.style.transition = "transform 0.1s ease"
+
+    setTimeout(() => {
+      button.style.transform = "scale(1)"
+    }, 100)
   }
 
-  updateActiveRiskButton(value) {
-    this.elements.controls.riskButtons.forEach((button) => {
-      const buttonValue = Number.parseFloat(button.getAttribute("data-value"))
-      button.classList.toggle("active", Math.abs(buttonValue - value) < 0.01)
-    })
-  }
+  renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount) {
+    const percentOfAccountCard = this.elements.results.percentOfAccount.closest(".metric-card")
+    const positionSizeCard = this.elements.results.positionSize.closest(".metric-card")
 
-  updateActiveMaxAccountButton(value) {
-    this.elements.controls.maxAccountButtons.forEach((button) => {
-      const buttonValue = Number.parseFloat(button.getAttribute("data-value"))
-      button.classList.toggle("active", Math.abs(buttonValue - value) < 0.01)
-    })
-  }
-
-  calculate() {
-    const inputs = this.state.calculator.inputs
-
-    // Validate inputs
-    const validation = validateTradeInputs(inputs)
-    this.state.updateCalculatorValidation(validation)
-    this.displayErrors(validation.errors)
-
-    // Reset if no meaningful data
-    if (!validation.hasData) {
-      this.resetResults()
-      return
+    // Apply red styling to both cards only when actually limited
+    if (percentOfAccountCard) {
+      toggleClass(percentOfAccountCard, "limited", isActuallyLimited)
     }
-
-    // Reset if validation failed
-    if (!validation.isValid) {
-      this.resetResults()
-      return
+    if (positionSizeCard) {
+      toggleClass(positionSizeCard, "limited", isActuallyLimited)
     }
-
-    // Perform calculations
-    const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice)
-    const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare)
-    const originalPositionSize = calculatePositionSize(shares, inputs.entryPrice)
-    const originalPercentOfAccount = (originalPositionSize / inputs.accountSize) * 100
-
-    // Apply max account percentage limit
-    const maxAccountPercent = inputs.maxAccountPercentage || 100
-    const maxPositionSize = (inputs.accountSize * maxAccountPercent) / 100
-    const limitedPositionSize = Math.min(originalPositionSize, maxPositionSize)
-    const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice)
-    const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100
-
-    // Determine if position was actually limited (only show red if we had to reduce it)
-    const isActuallyLimited = limitedPositionSize < originalPositionSize
-
-    const results = {
-      shares: formatNumber(limitedShares),
-      positionSize: isActuallyLimited
-        ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
-        : formatCurrency(limitedPositionSize),
-      stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-      totalRisk: formatCurrency(limitedShares * riskPerShare),
-      percentOfAccount: isActuallyLimited
-        ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
-        : formatPercentage(limitedPercentOfAccount),
-      rMultiple:
-        inputs.targetPrice > inputs.entryPrice
-          ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
-          : DEFAULTS.R_MULTIPLE_EMPTY,
-      fiveRTarget: formatCurrency(inputs.entryPrice + (inputs.trimRMultiple || 5) * riskPerShare),
-    }
-
-    // Calculate profit metrics if target price is specified
-    const hasValidTargetPrice = inputs.targetPrice > inputs.entryPrice
-
-    if (hasValidTargetPrice) {
-      const profitPerShare = inputs.targetPrice - inputs.entryPrice
-      const totalProfit = profitPerShare * limitedShares
-      const roi = calculateROI(totalProfit, limitedPositionSize)
-      const riskReward = totalProfit / (limitedShares * riskPerShare)
-
-      Object.assign(results, {
-        profitPerShare: formatCurrency(profitPerShare),
-        totalProfit: formatCurrency(totalProfit),
-        roi: formatPercentage(roi),
-        riskReward: riskReward.toFixed(2),
-      })
-
-      toggleClass(this.elements.results.profitSection, "hidden", false)
-    } else {
-      toggleClass(this.elements.results.profitSection, "hidden", true)
-    }
-
-    // Update state and UI
-    this.state.updateCalculatorResults(results)
-    this.renderResults(results)
-    this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount)
-    this.updateRiskScenarios(inputs)
-  }
-
-  renderResults(results) {
-    requestAnimationFrame(() => {
-      Object.entries(results).forEach(([key, value]) => {
-        if (this.elements.results[key]) {
-          if (key === "percentOfAccount" || key === "positionSize") {
-            // Use innerHTML for fields that may contain HTML spans
-            this.elements.results[key].innerHTML = value
-          } else {
-            updateElement(this.elements.results[key], value)
-          }
-        }
-      })
-    })
-  }
-
-  resetResults() {
-    const emptyResults = {
-      shares: DEFAULTS.EMPTY_RESULT,
-      positionSize: DEFAULTS.EMPTY_RESULT,
-      stopDistance: DEFAULTS.EMPTY_RESULT,
-      totalRisk: DEFAULTS.EMPTY_RESULT,
-      percentOfAccount: DEFAULTS.EMPTY_RESULT,
-      rMultiple: DEFAULTS.R_MULTIPLE_EMPTY,
-      fiveRTarget: DEFAULTS.EMPTY_RESULT,
-      profitPerShare: DEFAULTS.EMPTY_RESULT,
-      totalProfit: DEFAULTS.EMPTY_RESULT,
-      roi: DEFAULTS.EMPTY_RESULT,
-      riskReward: DEFAULTS.EMPTY_RESULT,
-    }
-
-    this.state.updateCalculatorResults(emptyResults)
-    this.renderResults(emptyResults)
-    toggleClass(this.elements.results.profitSection, "hidden", true)
-    this.resetScenarios()
   }
 
   displayErrors(errors) {
     // Clear existing errors
     Object.values(this.elements.errors).forEach((errorElement) => {
-      updateElement(errorElement, "")
-      toggleClass(errorElement, "hidden", true)
+      if (errorElement) {
+        updateElement(errorElement, "")
+        toggleClass(errorElement, "hidden", true)
+
+        // Remove error styling from parent input container
+        const inputContainer = errorElement.previousElementSibling
+        if (inputContainer && inputContainer.classList.contains("input-container")) {
+          inputContainer.style.borderColor = ""
+        }
+      }
     })
 
-    // Display new errors
+    // Display new errors with enhanced styling
     errors.forEach(({ field, message }) => {
       if (field === "stopLossPrice" && this.elements.errors.stopLoss) {
         updateElement(this.elements.errors.stopLoss, message)
         toggleClass(this.elements.errors.stopLoss, "hidden", false)
+
+        // Add error styling to input
+        const inputContainer = this.elements.errors.stopLoss.previousElementSibling
+        if (inputContainer && inputContainer.classList.contains("input-container")) {
+          inputContainer.style.borderColor = "var(--error)"
+        }
       } else if (field === "targetPrice" && this.elements.errors.targetPrice) {
         updateElement(this.elements.errors.targetPrice, message)
         toggleClass(this.elements.errors.targetPrice, "hidden", false)
+
+        // Add error styling to input
+        const inputContainer = this.elements.errors.targetPrice.previousElementSibling
+        if (inputContainer && inputContainer.classList.contains("input-container")) {
+          inputContainer.style.borderColor = "var(--error)"
+        }
       }
     })
-  }
-
-  updateRiskScenarios(inputs) {
-    const scenarioElements = [
-      this.elements.scenarios.scenario01,
-      this.elements.scenarios.scenario025,
-      this.elements.scenarios.scenario05,
-      this.elements.scenarios.scenario075,
-      this.elements.scenarios.scenario1,
-    ]
-
-    // Clear scenarios if no meaningful data
-    const hasMeaningfulData = inputs.accountSize > 0 && inputs.entryPrice > 0 && inputs.stopLossPrice > 0
-    if (!hasMeaningfulData || inputs.stopLossPrice >= inputs.entryPrice) {
-      scenarioElements.forEach((el) => updateElement(el, DEFAULTS.EMPTY_RESULT))
-      return
-    }
-
-    const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice)
-
-    RISK_LEVELS.forEach((riskLevel, index) => {
-      const shares = calculateShares(inputs.accountSize, riskLevel, riskPerShare)
-      const positionSize = calculatePositionSize(shares, inputs.entryPrice)
-
-      const text = `${formatNumber(shares)} shares (${formatCurrency(positionSize)})`
-      updateElement(scenarioElements[index], text)
-    })
-
-    // Update current selection highlight
-    const currentRisk = inputs.riskPercentage
-    document.querySelectorAll(".scenario-item").forEach((item, index) => {
-      toggleClass(item, "current", RISK_LEVELS[index] === currentRisk)
-    })
-  }
-
-  resetScenarios() {
-    Object.values(this.elements.scenarios).forEach((el) => {
-      updateElement(el, DEFAULTS.EMPTY_RESULT)
-    })
-
-    document.querySelectorAll(".scenario-item").forEach((item) => {
-      toggleClass(item, "current", false)
-    })
-  }
-
-  clearAll() {
-    // Reset inputs
-    Object.entries(this.elements.inputs).forEach(([key, input]) => {
-      if (key === "riskPercentage") {
-        input.value = DEFAULTS.RISK_PERCENTAGE
-        this.updateStateFromInput(key, DEFAULTS.RISK_PERCENTAGE)
-      } else if (key === "maxAccountPercentage") {
-        input.value = 100
-        this.updateStateFromInput(key, 100)
-      } else if (key === "trimRMultiple") {
-        input.value = 5
-        this.updateStateFromInput(key, 5)
-      } else if (key === "trimPercentage") {
-        input.value = 50
-        this.updateStateFromInput(key, 50)
-      } else {
-        input.value = ""
-        this.updateStateFromInput(key, 0)
-      }
-    })
-
-    // Reset buttons
-    this.updateActiveRiskButton(DEFAULTS.RISK_PERCENTAGE)
-    this.updateActiveMaxAccountButton(100)
-
-    this.updateTrimLabels()
-
-    // Reset results and clear errors
-    this.resetResults()
-    this.displayErrors([])
-
-    console.log("🧹 Calculator cleared")
-  }
-
-  toggleInfo() {
-    const isHidden = this.elements.controls.infoContent.classList.toggle("hidden")
-    updateElement(this.elements.controls.infoIcon, isHidden ? "+" : "−")
-    setAttributes(this.elements.controls.infoButton, { "aria-expanded": !isHidden })
-    setAttributes(this.elements.controls.infoContent, { "aria-expanded": !isHidden })
-  }
-
-  toggleScenarios(scrollIntoView = false) {
-    const isHidden = this.elements.controls.scenariosContent.classList.toggle("hidden")
-
-    // Update both buttons to stay in sync
-    updateElement(this.elements.controls.scenariosIcon, isHidden ? "+" : "−")
-    setAttributes(this.elements.controls.scenariosButton, { "aria-expanded": !isHidden })
-    setAttributes(this.elements.controls.quickScenariosButton, { "aria-expanded": !isHidden })
-    setAttributes(this.elements.controls.scenariosContent, { "aria-expanded": !isHidden })
-
-    // Scroll scenarios into view when opened from top button
-    if (!isHidden && scrollIntoView) {
-      setTimeout(() => {
-        this.elements.controls.scenariosContent.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        })
-      }, 100)
-    }
-  }
-
-  addProfitToAccount() {
-    const profitText = this.elements.results.totalProfit.textContent.replace(/[^0-9.-]+/g, "")
-    const accountText = sanitizeInput(this.elements.inputs.accountSize.value)
-    const profit = Number.parseFloat(profitText)
-    const account = Number.parseFloat(accountText)
-
-    if (!isNaN(profit) && !isNaN(account) && profit > 0) {
-      const newAccountSize = account + profit
-      this.elements.inputs.accountSize.value = formatNumber(newAccountSize)
-      this.updateStateFromInput("accountSize", newAccountSize)
-      this.calculate()
-
-      console.log(`💰 Added profit $${formatNumber(profit)} to account. New balance: $${formatNumber(newAccountSize)}`)
-    }
-  }
-
-  renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount) {
-    const percentOfAccountCard = this.elements.results.percentOfAccount.closest(".result-card")
-    const positionSizeCard = this.elements.results.positionSize.closest(".result-card")
-
-    // Apply red styling to both cards only when actually limited
-    toggleClass(percentOfAccountCard, "limited", isActuallyLimited)
-    toggleClass(positionSizeCard, "limited", isActuallyLimited)
-  }
-
-  updateTrimLabels() {
-    const trimRMultiple = this.state.calculator.inputs.trimRMultiple || 5
-    const trimPercentage = this.state.calculator.inputs.trimPercentage || 50
-
-    updateElement(this.elements.results.trimRMultipleLabel, `${trimRMultiple}R`)
-    updateElement(this.elements.results.trimPercentageLabel, `${trimPercentage}%`)
   }
 }
