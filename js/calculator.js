@@ -1,4 +1,3 @@
-// calculator.js content
 import { 
     formatCurrency, 
     formatNumber, 
@@ -65,8 +64,7 @@ export class Calculator {
                 scenariosButton: document.getElementById('scenariosButton'),
                 scenariosIcon: document.getElementById('scenariosIcon'),
                 scenariosContent: document.getElementById('scenariosContent'),
-                quickScenariosButton: document.getElementById('quickScenariosButton'),
-                saveTradeButton: document.getElementById('saveTradeButton')
+                quickScenariosButton: document.getElementById('quickScenariosButton')
             },
             scenarios: {
                 scenario01: document.getElementById('scenario-0-1'),
@@ -174,6 +172,7 @@ export class Calculator {
             const inputValue = e.target.value.trim();
             
             if (inputValue === '') {
+                // Keep it empty in the UI, but use 100 for calculations
                 this.updateStateFromInput('maxAccountPercentage', 100);
                 this.updateActiveMaxAccountButton(100);
             } else {
@@ -188,126 +187,138 @@ export class Calculator {
     setupControlHandlers() {
         // Risk buttons
         this.elements.controls.riskButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const risk = parseFloat(e.target.dataset.risk);
-                this.elements.inputs.riskPercentage.value = risk;
-                this.updateStateFromInput('riskPercentage', risk);
-                this.updateActiveRiskButton(risk);
+            button.addEventListener('click', () => {
+                const value = parseFloat(button.getAttribute('data-value'));
+                this.elements.inputs.riskPercentage.value = value;
+                this.updateStateFromInput('riskPercentage', value);
+                this.updateActiveRiskButton(value);
                 this.calculate();
             });
         });
 
         // Max account buttons
         this.elements.controls.maxAccountButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const maxPct = parseFloat(e.target.dataset.max);
-                this.elements.inputs.maxAccountPercentage.value = maxPct;
-                this.updateStateFromInput('maxAccountPercentage', maxPct);
-                this.updateActiveMaxAccountButton(maxPct);
+            button.addEventListener('click', () => {
+                const value = parseFloat(button.getAttribute('data-value'));
+                this.elements.inputs.maxAccountPercentage.value = value;
+                this.updateStateFromInput('maxAccountPercentage', value);
+                this.updateActiveMaxAccountButton(value);
                 this.calculate();
             });
         });
 
         // Clear button
-        this.elements.controls.clearButton.addEventListener('click', () => this.clearAll());
+        this.elements.controls.clearButton.addEventListener('click', () => {
+            this.clearAll();
+        });
 
         // Info toggle
-        this.elements.controls.infoButton.addEventListener('click', () => this.toggleInfo());
+        this.elements.controls.infoButton.addEventListener('click', () => {
+            this.toggleInfo();
+        });
 
-        // Add profit
+        // Scenarios toggles (both buttons)
+        this.elements.controls.scenariosButton.addEventListener('click', () => {
+            this.toggleScenarios();
+        });
+
+        this.elements.controls.quickScenariosButton.addEventListener('click', () => {
+            this.toggleScenarios(true); // true = scroll into view
+        });
+
+        // Add profit button
         if (this.elements.controls.addProfitButton) {
-            this.elements.controls.addProfitButton.addEventListener('click', () => this.addProfitToAccount());
+            this.elements.controls.addProfitButton.addEventListener('click', () => {
+                this.addProfitToAccount();
+            });
         }
-
-        // Scenarios toggle (both buttons)
-        this.elements.controls.scenariosButton.addEventListener('click', () => this.toggleScenarios(true));
-        this.elements.controls.quickScenariosButton.addEventListener('click', () => this.toggleScenarios());
-
-        // Save trade button
-        this.elements.controls.saveTradeButton.addEventListener('click', () => this.state.journal.showAddTradeModal());
     }
 
     updateStateFromInput(key, value) {
         this.state.updateCalculatorInput(key, value);
     }
 
-    updateActiveRiskButton(risk) {
+    updateActiveRiskButton(value) {
         this.elements.controls.riskButtons.forEach(button => {
-            toggleClass(button, 'active', parseFloat(button.dataset.risk) === risk);
+            const buttonValue = parseFloat(button.getAttribute('data-value'));
+            button.classList.toggle('active', Math.abs(buttonValue - value) < 0.01);
         });
     }
 
-    updateActiveMaxAccountButton(maxPct) {
+    updateActiveMaxAccountButton(value) {
         this.elements.controls.maxAccountButtons.forEach(button => {
-            toggleClass(button, 'active', parseFloat(button.dataset.max) === maxPct);
+            const buttonValue = parseFloat(button.getAttribute('data-value'));
+            button.classList.toggle('active', Math.abs(buttonValue - value) < 0.01);
         });
     }
 
     calculate() {
         const inputs = this.state.calculator.inputs;
+        
+        // Validate inputs
         const validation = validateTradeInputs(inputs);
-
         this.state.updateCalculatorValidation(validation);
         this.displayErrors(validation.errors);
 
-        if (!validation.isValid || !validation.hasData) {
+        // Reset if no meaningful data
+        if (!validation.hasData) {
             this.resetResults();
-            this.elements.controls.saveTradeButton.disabled = true;
             return;
         }
 
+        // Reset if validation failed
+        if (!validation.isValid) {
+            this.resetResults();
+            return;
+        }
+
+        // Perform calculations
         const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
-        let shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
-        let positionSize = calculatePositionSize(shares, inputs.entryPrice);
+        const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
+        const originalPositionSize = calculatePositionSize(shares, inputs.entryPrice);
+        const originalPercentOfAccount = (originalPositionSize / inputs.accountSize) * 100;
+        
+        // Apply max account percentage limit
+        const maxAccountPercent = inputs.maxAccountPercentage || 100;
+        const maxPositionSize = (inputs.accountSize * maxAccountPercent) / 100;
+        const limitedPositionSize = Math.min(originalPositionSize, maxPositionSize);
+        const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
+        const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
+        
+        // Determine if position was actually limited (only show red if we had to reduce it)
+        const isActuallyLimited = limitedPositionSize < originalPositionSize;
 
-        const maxPositionSize = (inputs.accountSize * inputs.maxAccountPercentage) / 100;
-        const isLimited = positionSize > maxPositionSize;
-
-        let originalPercentOfAccount = (positionSize / inputs.accountSize) * 100;
-        let limitedPercentOfAccount = inputs.maxAccountPercentage;
-
-        if (isLimited) {
-            positionSize = maxPositionSize;
-            shares = Math.floor(positionSize / inputs.entryPrice);
-        }
-
-        const isActuallyLimited = isLimited && originalPercentOfAccount > inputs.maxAccountPercentage;
-
-        const stopDistance = formatPercentage((riskPerShare / inputs.entryPrice) * 100);
-        const totalRisk = formatCurrency(shares * riskPerShare);
-
-        let percentOfAccount = formatPercentage((positionSize / inputs.accountSize) * 100);
-        if (isActuallyLimited) {
-            percentOfAccount = `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`;
-        }
-
-        const rMultiple = calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice);
-        const fiveRDistance = riskPerShare * 5;
-        const fiveRTarget = formatCurrency(inputs.entryPrice + fiveRDistance);
-
-        let results = {
-            shares: formatNumber(shares),
-            positionSize: formatCurrency(positionSize),
-            stopDistance,
-            totalRisk,
-            percentOfAccount,
-            rMultiple: rMultiple.toFixed(2) + ' R',
-            fiveRTarget
+        const results = {
+            shares: formatNumber(limitedShares),
+            positionSize: isActuallyLimited 
+                ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
+                : formatCurrency(limitedPositionSize),
+            stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
+            totalRisk: formatCurrency(limitedShares * riskPerShare),
+            percentOfAccount: isActuallyLimited 
+                ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
+                : formatPercentage(limitedPercentOfAccount),
+            rMultiple: inputs.targetPrice > inputs.entryPrice
+                ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
+                : DEFAULTS.R_MULTIPLE_EMPTY,
+            fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare))
         };
 
-        if (inputs.targetPrice > 0) {
-            const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-            const totalProfit = shares * profitPerShare;
-            const roi = calculateROI(totalProfit, positionSize);
-            const riskReward = (profitPerShare / riskPerShare).toFixed(2) + ':1';
+        // Calculate profit metrics if target price is specified
+        const hasValidTargetPrice = inputs.targetPrice > inputs.entryPrice;
 
-            results = {
-                ...results,
+        if (hasValidTargetPrice) {
+            const profitPerShare = inputs.targetPrice - inputs.entryPrice;
+            const totalProfit = profitPerShare * limitedShares;
+            const roi = calculateROI(totalProfit, limitedPositionSize);
+            const riskReward = totalProfit / (limitedShares * riskPerShare);
+
+            Object.assign(results, {
                 profitPerShare: formatCurrency(profitPerShare),
                 totalProfit: formatCurrency(totalProfit),
                 roi: formatPercentage(roi),
-                riskReward
-            };
+                riskReward: riskReward.toFixed(2)
+            });
 
             toggleClass(this.elements.results.profitSection, 'hidden', false);
         } else {
@@ -319,9 +330,6 @@ export class Calculator {
         this.renderResults(results);
         this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
-
-        const hasValidResults = shares > 0;
-        this.elements.controls.saveTradeButton.disabled = !hasValidResults;
     }
 
     renderResults(results) {
