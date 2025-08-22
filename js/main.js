@@ -1,4 +1,3 @@
-// main.js
 // Main application entry point
 import { Calculator } from './calculator.js';
 import { Journal } from './journal.js';
@@ -28,9 +27,6 @@ class App {
         // Set up any global event listeners
         this.setupGlobalEvents();
 
-        // Set up tab switching
-        this.setupTabs();
-
         // Initial calculation
         this.calculator.calculate();
 
@@ -51,30 +47,6 @@ class App {
         // Handle state changes
         this.state.on('stateChange', (changes) => {
             console.log('State updated:', changes);
-        });
-    }
-
-    setupTabs() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tab = button.dataset.tab;
-
-                // Update buttons
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-
-                // Update contents
-                tabContents.forEach(content => {
-                    content.classList.toggle('active', content.id === `${tab}-content`);
-                    content.classList.toggle('hidden', content.id !== `${tab}-content`);
-                });
-
-                // Update state
-                this.state.setActiveSection(tab);
-            });
         });
     }
 }
