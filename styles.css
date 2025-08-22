@@ -105,6 +105,33 @@ body {
     display: none;
 }
 
+.journal-form {
+    display: grid;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.journal-form textarea.journal-input {
+    height: auto;
+}
+
+.journal-stats {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-md);
+}
+
+.journal-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.journal-list .journal-card {
+    margin-bottom: 0;
+}
+
 /* Calculator output grouping */
 .calculator-output {
     /* Groups results, info, and scenarios for better organization */
@@ -524,6 +551,40 @@ body.dark-mode .journal-section {
     display: flex;
     justify-content: center;
     margin-bottom: var(--spacing-lg);
+}
+
+/* Section toggle navigation */
+.section-toggle {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.toggle-button {
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius);
+    padding: 7px var(--spacing-md);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.toggle-button.active {
+    background-color: var(--theme-color);
+    color: #fff;
+}
+
+body.dark-mode .toggle-button {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+body.dark-mode .toggle-button.active {
+    background-color: var(--theme-color);
+    color: #fff;
 }
 
 .theme-toggle {
