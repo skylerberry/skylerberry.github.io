@@ -293,24 +293,8 @@ export class Calculator {
         // Determine if position was actually limited (only show red if we had to reduce it)
         const isActuallyLimited = limitedPositionSize < originalPositionSize;
         
-        // Create risk percentage display with visual cues
-        let riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
-        let riskPercentageClass = '';
-        
-        // Add visual cues if actual risk is significantly different from intended
-        if (isActuallyLimited) {
-            const riskReduction = ((intendedRiskPercentage - actualRiskPercentage) / intendedRiskPercentage) * 100;
-            
-            if (riskReduction > 50) {
-                // Very significant reduction - more than 50% less risk than intended
-                riskPercentageClass = 'very-low-risk';
-                riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚠️)`;
-            } else if (riskReduction > 25) {
-                // Moderate reduction - 25-50% less risk than intended
-                riskPercentageClass = 'low-risk';
-                riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚡)`;
-            }
-        }
+        // Create risk percentage display (clean format like Stop Distance)
+        const riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
 
         const results = {
             shares: formatNumber(limitedShares),
@@ -318,7 +302,7 @@ export class Calculator {
                 ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
                 : formatCurrency(limitedPositionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-            totalRisk: `${formatCurrency(actualRiskAmount)} <span class="risk-percentage ${riskPercentageClass}">${riskPercentageDisplay}</span>`,
+            totalRisk: `${formatCurrency(actualRiskAmount)} ${riskPercentageDisplay}`,
             percentOfAccount: isActuallyLimited 
                 ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
                 : formatPercentage(limitedPercentOfAccount),
