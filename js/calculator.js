@@ -285,11 +285,32 @@ export class Calculator {
     const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
     
     // Calculate actual risk amount and percentage
+    // Calculate actual risk amount and percentage
     const actualRiskAmount = limitedShares * riskPerShare;
     const actualRiskPercentage = (actualRiskAmount / inputs.accountSize) * 100;
+    const intendedRiskPercentage = inputs.riskPercentage;
     
-    // Determine if position was actually limited (only show red if we had to reduce it)
+    // Determine if position was actually limited
     const isActuallyLimited = limitedPositionSize < originalPositionSize;
+    
+    // Create risk percentage display with visual cues
+    let riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
+    let riskPercentageClass = '';
+    
+    // Add visual cues if actual risk is significantly different from intended
+    if (isActuallyLimited) {
+        const riskReduction = ((intendedRiskPercentage - actualRiskPercentage) / intendedRiskPercentage) * 100;
+        
+        if (riskReduction > 50) {
+            // Very significant reduction - more than 50% less risk than intended
+            riskPercentageClass = 'very-low-risk';
+            riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚠️)`;
+        } else if (riskReduction > 25) {
+            // Moderate reduction - 25-50% less risk than intended
+            riskPercentageClass = 'low-risk';
+            riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚡)`;
+        }
+    }
 
     const results = {
         shares: formatNumber(limitedShares),
@@ -297,7 +318,7 @@ export class Calculator {
             ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
             : formatCurrency(limitedPositionSize),
         stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-        totalRisk: `${formatCurrency(actualRiskAmount)} (${actualRiskPercentage.toFixed(2)}%)`,
+        totalRisk: `${formatCurrency(actualRiskAmount)} <span class="risk-percentage ${riskPercentageClass}">${riskPercentageDisplay}</span>`,
         percentOfAccount: isActuallyLimited 
             ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
             : formatPercentage(limitedPercentOfAccount),
@@ -306,6 +327,7 @@ export class Calculator {
             : DEFAULTS.R_MULTIPLE_EMPTY,
         fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare))
     };
+
 
     // Calculate profit metrics if target price is specified
     const hasValidTargetPrice = inputs.targetPrice > inputs.entryPrice;
@@ -511,5 +533,6 @@ export class Calculator {
         toggleClass(positionSizeCard, 'limited', isActuallyLimited);
     }
 }
+
 
 
