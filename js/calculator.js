@@ -252,116 +252,115 @@ export class Calculator {
         });
     }
 
-    const inputs = this.state.calculator.inputs;
-    
-    // Validate inputs
-    const validation = validateTradeInputs(inputs);
-    this.state.updateCalculatorValidation(validation);
-    this.displayErrors(validation.errors);
-
-    // Reset if no meaningful data
-    if (!validation.hasData) {
-        this.resetResults();
-        return;
-    }
-
-    // Reset if validation failed
-    if (!validation.isValid) {
-        this.resetResults();
-        return;
-    }
-
-    // Perform calculations
-    const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
-    const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
-    const originalPositionSize = calculatePositionSize(shares, inputs.entryPrice);
-    const originalPercentOfAccount = (originalPositionSize / inputs.accountSize) * 100;
-    
-    // Apply max account percentage limit
-    const maxAccountPercent = inputs.maxAccountPercentage || 100;
-    const maxPositionSize = (inputs.accountSize * maxAccountPercent) / 100;
-    const limitedPositionSize = Math.min(originalPositionSize, maxPositionSize);
-    const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
-    const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
-    
-    // Calculate actual risk amount and percentage
-    // Calculate actual risk amount and percentage
-    const actualRiskAmount = limitedShares * riskPerShare;
-    const actualRiskPercentage = (actualRiskAmount / inputs.accountSize) * 100;
-    const intendedRiskPercentage = inputs.riskPercentage;
-    
-    // Determine if position was actually limited
-    const isActuallyLimited = limitedPositionSize < originalPositionSize;
-    
-    // Create risk percentage display with visual cues
-    let riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
-    let riskPercentageClass = '';
-    
-    // Add visual cues if actual risk is significantly different from intended
-    if (isActuallyLimited) {
-        const riskReduction = ((intendedRiskPercentage - actualRiskPercentage) / intendedRiskPercentage) * 100;
+    calculate() {
+        const inputs = this.state.calculator.inputs;
         
-        if (riskReduction > 50) {
-            // Very significant reduction - more than 50% less risk than intended
-            riskPercentageClass = 'very-low-risk';
-            riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚠️)`;
-        } else if (riskReduction > 25) {
-            // Moderate reduction - 25-50% less risk than intended
-            riskPercentageClass = 'low-risk';
-            riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚡)`;
+        // Validate inputs
+        const validation = validateTradeInputs(inputs);
+        this.state.updateCalculatorValidation(validation);
+        this.displayErrors(validation.errors);
+
+        // Reset if no meaningful data
+        if (!validation.hasData) {
+            this.resetResults();
+            return;
         }
+
+        // Reset if validation failed
+        if (!validation.isValid) {
+            this.resetResults();
+            return;
+        }
+
+        // Perform calculations
+        const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopLossPrice);
+        const shares = calculateShares(inputs.accountSize, inputs.riskPercentage, riskPerShare);
+        const originalPositionSize = calculatePositionSize(shares, inputs.entryPrice);
+        const originalPercentOfAccount = (originalPositionSize / inputs.accountSize) * 100;
+        
+        // Apply max account percentage limit
+        const maxAccountPercent = inputs.maxAccountPercentage || 100;
+        const maxPositionSize = (inputs.accountSize * maxAccountPercent) / 100;
+        const limitedPositionSize = Math.min(originalPositionSize, maxPositionSize);
+        const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
+        const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
+        
+        // Calculate actual risk amount and percentage
+        const actualRiskAmount = limitedShares * riskPerShare;
+        const actualRiskPercentage = (actualRiskAmount / inputs.accountSize) * 100;
+        const intendedRiskPercentage = inputs.riskPercentage;
+        
+        // Determine if position was actually limited (only show red if we had to reduce it)
+        const isActuallyLimited = limitedPositionSize < originalPositionSize;
+        
+        // Create risk percentage display with visual cues
+        let riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
+        let riskPercentageClass = '';
+        
+        // Add visual cues if actual risk is significantly different from intended
+        if (isActuallyLimited) {
+            const riskReduction = ((intendedRiskPercentage - actualRiskPercentage) / intendedRiskPercentage) * 100;
+            
+            if (riskReduction > 50) {
+                // Very significant reduction - more than 50% less risk than intended
+                riskPercentageClass = 'very-low-risk';
+                riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚠️)`;
+            } else if (riskReduction > 25) {
+                // Moderate reduction - 25-50% less risk than intended
+                riskPercentageClass = 'low-risk';
+                riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}% ⚡)`;
+            }
+        }
+
+        const results = {
+            shares: formatNumber(limitedShares),
+            positionSize: isActuallyLimited 
+                ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
+                : formatCurrency(limitedPositionSize),
+            stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
+            totalRisk: `${formatCurrency(actualRiskAmount)} <span class="risk-percentage ${riskPercentageClass}">${riskPercentageDisplay}</span>`,
+            percentOfAccount: isActuallyLimited 
+                ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
+                : formatPercentage(limitedPercentOfAccount),
+            rMultiple: inputs.targetPrice > inputs.entryPrice
+                ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
+                : DEFAULTS.R_MULTIPLE_EMPTY,
+            fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare))
+        };
+
+        // Calculate profit metrics if target price is specified
+        const hasValidTargetPrice = inputs.targetPrice > inputs.entryPrice;
+
+        if (hasValidTargetPrice) {
+            const profitPerShare = inputs.targetPrice - inputs.entryPrice;
+            const totalProfit = profitPerShare * limitedShares;
+            const roi = calculateROI(totalProfit, limitedPositionSize);
+            const riskReward = totalProfit / (limitedShares * riskPerShare);
+
+            Object.assign(results, {
+                profitPerShare: formatCurrency(profitPerShare),
+                totalProfit: formatCurrency(totalProfit),
+                roi: formatPercentage(roi),
+                riskReward: riskReward.toFixed(2)
+            });
+
+            toggleClass(this.elements.results.profitSection, 'hidden', false);
+        } else {
+            toggleClass(this.elements.results.profitSection, 'hidden', true);
+        }
+
+        // Update state and UI
+        this.state.updateCalculatorResults(results);
+        this.renderResults(results);
+        this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
+        this.updateRiskScenarios(inputs);
     }
-
-    const results = {
-        shares: formatNumber(limitedShares),
-        positionSize: isActuallyLimited 
-            ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
-            : formatCurrency(limitedPositionSize),
-        stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-        totalRisk: `${formatCurrency(actualRiskAmount)} <span class="risk-percentage ${riskPercentageClass}">${riskPercentageDisplay}</span>`,
-        percentOfAccount: isActuallyLimited 
-            ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
-            : formatPercentage(limitedPercentOfAccount),
-        rMultiple: inputs.targetPrice > inputs.entryPrice
-            ? `${calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice).toFixed(2)} R`
-            : DEFAULTS.R_MULTIPLE_EMPTY,
-        fiveRTarget: formatCurrency(inputs.entryPrice + (5 * riskPerShare))
-    };
-
-
-    // Calculate profit metrics if target price is specified
-    const hasValidTargetPrice = inputs.targetPrice > inputs.entryPrice;
-
-    if (hasValidTargetPrice) {
-        const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-        const totalProfit = profitPerShare * limitedShares;
-        const roi = calculateROI(totalProfit, limitedPositionSize);
-        const riskReward = totalProfit / (limitedShares * riskPerShare);
-
-        Object.assign(results, {
-            profitPerShare: formatCurrency(profitPerShare),
-            totalProfit: formatCurrency(totalProfit),
-            roi: formatPercentage(roi),
-            riskReward: riskReward.toFixed(2)
-        });
-
-        toggleClass(this.elements.results.profitSection, 'hidden', false);
-    } else {
-        toggleClass(this.elements.results.profitSection, 'hidden', true);
-    }
-
-    // Update state and UI
-    this.state.updateCalculatorResults(results);
-    this.renderResults(results);
-    this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
-    this.updateRiskScenarios(inputs);
-}
 
     renderResults(results) {
         requestAnimationFrame(() => {
             Object.entries(results).forEach(([key, value]) => {
                 if (this.elements.results[key]) {
-                    if (key === 'percentOfAccount' || key === 'positionSize') {
+                    if (key === 'percentOfAccount' || key === 'positionSize' || key === 'totalRisk') {
                         // Use innerHTML for fields that may contain HTML spans
                         this.elements.results[key].innerHTML = value;
                     } else {
@@ -533,6 +532,3 @@ export class Calculator {
         toggleClass(positionSizeCard, 'limited', isActuallyLimited);
     }
 }
-
-
-
