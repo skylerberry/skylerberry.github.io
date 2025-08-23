@@ -975,3 +975,35 @@ body.dark-mode .max-account-button.active {
     background-color: var(--theme-color);
     color: white;
 }
+
+/* Add these styles to your styles.css file */
+
+/* Risk percentage styling in Total Risk Amount card */
+.result-value .risk-percentage {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* When risk is significantly lower than intended, show it in orange */
+.result-value .risk-percentage.low-risk {
+    color: #f59e0b;
+}
+
+/* When risk is very low (less than half intended), show in red */
+.result-value .risk-percentage.very-low-risk {
+    color: #ef4444;
+}
+
+/* Dark mode styles */
+body.dark-mode .result-value .risk-percentage {
+    color: #9ca3af;
+}
+
+body.dark-mode .result-value .risk-percentage.low-risk {
+    color: #fbbf24;
+}
+
+body.dark-mode .result-value .risk-percentage.very-low-risk {
+    color: #f87171;
+}
