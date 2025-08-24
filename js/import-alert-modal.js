@@ -1,376 +1,203 @@
-// Import Alert Modal Module
+// Smart Paste + modal fallback for Discord alerts
 import { parseDiscordAlert } from './discord-alert-parser.js';
 
 export function initImportAlert() {
-  console.log('🚀 Initializing Import Alert feature');
+  // module state
+  let modalEl = null;
 
-  // Create the import button below the subtitle
+  // mount button and toast host
   createImportButton();
-  
-  // Create toast container for notifications
-  createToastContainer();
-  
-  // Modal will be created when needed
-  let modalElement = null;
-  let importTimeout = null;
-  let hasAlreadyImported = false;
+  ensureToastHost();
 
-
-
+  // ---------- UI: button ----------
   function createImportButton() {
     const subtitle = document.querySelector('.calculator-subtitle');
-    if (!subtitle) {
-      console.error('Could not find calculator subtitle');
-      return;
-    }
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'import-alert-bar';
-    buttonContainer.innerHTML = `
-      <button type="button" class="import-alert-button" id="importAlertBtn">
-        📋 Paste Alert
-      </button>
-    `;
-
-    subtitle.insertAdjacentElement('afterend', buttonContainer);
-    
-    // Add click handler for smart paste
-    const button = buttonContainer.querySelector('#importAlertBtn');
-    button.addEventListener('click', handleSmartPaste);
-    
-    console.log('✅ Smart paste button created');
+    if (!subtitle) return console.error('Subtitle not found for Import button');
+    const bar = document.createElement('div');
+    bar.className = 'import-alert-bar';
+    bar.innerHTML = `<button type="button" class="import-alert-button" id="importAlertBtn">📋 Paste Alert</button>`;
+    subtitle.insertAdjacentElement('afterend', bar);
+    bar.querySelector('#importAlertBtn').addEventListener('click', onSmartPaste);
   }
 
-  function createToastContainer() {
-    let toastHost = document.getElementById('toastHost');
-    if (!toastHost) {
-      toastHost = document.createElement('div');
-      toastHost.id = 'toastHost';
-      document.body.appendChild(toastHost);
-    }
-  }
-
-  // Smart paste function - tries clipboard first, falls back to modal
-  async function handleSmartPaste() {
-    console.log('📋 Attempting smart paste...');
-    
+  // ---------- SMART PASTE ----------
+  async function onSmartPaste() {
     try {
-      // Check if clipboard API is available
-      if (!navigator.clipboard || !navigator.clipboard.readText) {
-        console.log('📝 Clipboard API not available, opening modal');
+      if (!navigator.clipboard?.readText) {
+        showToast('Clipboard not available — opening paste box');
         openModal();
         return;
       }
-
-      // Try to read clipboard
-      const clipboardText = await navigator.clipboard.readText();
-      
-      if (!clipboardText || clipboardText.trim() === '') {
-        console.log('📝 Clipboard empty, opening modal');
-        showToast('Clipboard is empty - paste your alert in the modal');
+      const txt = (await navigator.clipboard.readText())?.trim();
+      if (!txt) {
+        showToast('Clipboard is empty — paste your alert in the box');
         openModal();
         return;
       }
-
-      console.log('📋 Found clipboard content, attempting to parse...');
-      
-      // Try to parse the clipboard content
-      const parsed = parseDiscordAlert(clipboardText.trim());
-      
-      // If we get here, parsing succeeded!
-      console.log('🚀 Smart paste successful!');
-      populateCalculator(parsed);
-      showToast('Alert pasted successfully! ⚡');
-      
-      // Emit event for auto-snapshot
-      window.dispatchEvent(new CustomEvent('alertImported', { 
-        detail: { source: 'smartPaste', data: parsed }
-      }));
-      
-    } catch (error) {
-      console.log('📝 Smart paste failed:', error.message);
-      
-      // Graceful fallback to modal
-      if (error.message.includes('Clipboard')) {
-        showToast('Unable to access clipboard - use the modal instead');
-      } else {
-        showToast('Invalid alert format - opening editor');
-      }
-      
+      const parsed = parseDiscordAlert(txt);
+      applyToCalculator(parsed);
+      showToast('Alert pasted! ⚡');
+      // let logbook auto-snapshot if enabled
+      window.dispatchEvent(new CustomEvent('alertImported'));
+    } catch (err) {
+      showToast('Couldn’t parse alert — opening editor');
       openModal();
-      
-      // If we have clipboard content, pre-populate the modal
+      // best-effort prefill
       try {
-        const clipboardText = await navigator.clipboard.readText();
-        if (clipboardText && clipboardText.trim()) {
-          setTimeout(() => {
-            const textarea = modalElement?.querySelector('#alertTextarea');
-            if (textarea) {
-              textarea.value = clipboardText.trim();
-              // Trigger validation
-              textarea.dispatchEvent(new Event('input'));
-            }
-          }, 100);
+        const txt = (await navigator.clipboard.readText())?.trim();
+        if (txt && modalEl) {
+          const ta = modalEl.querySelector('#alertTextarea');
+          ta.value = txt;
+          ta.dispatchEvent(new Event('input', { bubbles: true }));
         }
-      } catch (e) {
-        // Ignore clipboard errors for pre-population
-      }
+      } catch { /* ignore */ }
     }
   }
-    console.log('📝 Opening import modal');
 
-    // Reset import state for new modal session
-    hasAlreadyImported = false;
-    clearTimeout(importTimeout);
-
-    if (!modalElement) {
-      createModal();
-    }
-
-    modalElement.style.display = 'flex';
-    const textarea = modalElement.querySelector('#alertTextarea');
-    textarea.focus();
-    clearError();
-    textarea.value = '';
-    
-    // Prevent body scroll
+  // ---------- MODAL ----------
+  function openModal() {
+    if (!modalEl) buildModal();
+    modalEl.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    const ta = modalEl.querySelector('#alertTextarea');
+    clearError();
+    ta.value = '';
+    ta.focus();
   }
 
   function closeModal() {
-    if (modalElement) {
-      modalElement.style.display = 'none';
-      document.body.style.overflow = '';
-      console.log('❌ Modal closed');
-    }
+    if (!modalEl) return;
+    modalEl.style.display = 'none';
+    document.body.style.overflow = '';
   }
 
-  function createModal() {
-    modalElement = document.createElement('div');
-    modalElement.className = 'modal-backdrop';
-    modalElement.innerHTML = `
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Import Discord Alert</h3>
-          <button type="button" class="modal-close">×</button>
-        </div>
-        <div class="modal-body">
-          <textarea 
-            id="alertTextarea" 
-            class="modal-textarea" 
-            placeholder="Paste your Discord alert here:
+  function buildModal() {
+    modalEl = document.createElement('div');
+    modalEl.className = 'modal-backdrop';
+    // keep template simple to avoid backtick accidents
+    modalEl.innerHTML =
+      '<div class="modal-card">' +
+        '<div class="modal-header">' +
+          '<h3>Import Discord Alert</h3>' +
+          '<button type="button" class="modal-close" aria-label="Close">×</button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+          '<textarea id="alertTextarea" class="modal-textarea" placeholder="Adding $TSLA shares @ 243.10\nStop loss @ 237.90\nRisking 1%\n@everyone"></textarea>' +
+          '<div id="alertError" class="error-text" style="display:none;"></div>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="btn-secondary" id="cancelImport">Cancel</button>' +
+          '<button type="button" class="btn-primary" id="manualImport" disabled>Import</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modalEl);
 
-Adding $TSLA shares @ 243.10
-Stop loss @ 237.90
-Risking 1%
-@everyone"
-          ></textarea>
-          <div id="alertError" class="error-text" style="display:none;"></div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelImport">Cancel</button>
-          <button type="button" class="btn-primary" id="manualImport" disabled>Import</button>
-        </div>
-      </div>
-    `;
+    // wire controls
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+    modalEl.querySelector('.modal-close').addEventListener('click', closeModal);
+    modalEl.querySelector('#cancelImport').addEventListener('click', closeModal);
+    modalEl.querySelector('#manualImport').addEventListener('click', onManualImport);
 
-    document.body.appendChild(modalElement);
+    // textarea behavior (validate -> enable Import)
+    const ta = modalEl.querySelector('#alertTextarea');
+    const importBtn = modalEl.querySelector('#manualImport');
 
-    // Add event listeners
-    modalElement.addEventListener('click', (e) => {
-      if (e.target === modalElement) closeModal();
-    });
-
-    modalElement.querySelector('.modal-close').addEventListener('click', closeModal);
-    modalElement.querySelector('#cancelImport').addEventListener('click', closeModal);
-    modalElement.querySelector('#manualImport').addEventListener('click', onManualImport);
-
-    // Auto-import logic with smart detection to prevent premature imports
-    const textarea = modalElement.querySelector('#alertTextarea');
-    let isUserTyping = false;
-    let lastInputTime = 0;
-
-    const scheduleAutoImport = (text, delay = 500) => {
-      if (hasAlreadyImported) return;
-      
-      clearTimeout(importTimeout);
-      importTimeout = setTimeout(() => {
-        if (!hasAlreadyImported && !isUserTyping) {
-          tryAutoImport(text);
-        }
-      }, delay);
-    };
-
-    // Track typing state to prevent premature imports
-    textarea.addEventListener('keydown', () => {
-      isUserTyping = true;
-      lastInputTime = Date.now();
-    });
-
-    textarea.addEventListener('keyup', () => {
-      setTimeout(() => {
-        const timeSinceLastInput = Date.now() - lastInputTime;
-        if (timeSinceLastInput >= 1000) { // 1 second of no typing
-          isUserTyping = false;
-        }
-      }, 1000);
-    });
-
-    // Fast auto-import on paste (user expects immediate action)
-    textarea.addEventListener('paste', () => {
-      isUserTyping = false; // Paste is intentional, not typing
-      setTimeout(() => {
-        const text = textarea.value.trim();
-        if (text) {
-          scheduleAutoImport(text, 300); // Quick but not instant
-        }
-      }, 50);
-    });
-
-    // Conservative auto-import on typing (wait for user to stop)
-    textarea.addEventListener('input', () => {
-      clearError();
-      lastInputTime = Date.now();
-      
-      const text = textarea.value.trim();
-      if (text && !isUserTyping) {
-        // Only auto-import if user isn't actively typing
-        scheduleAutoImport(text, 1500);
-      } else if (text) {
-        // Just validate without importing while typing
-        try {
-          parseDiscordAlert(text);
-          clearError();
-        } catch (error) {
-          showError(error.message);
-        }
+    ta.addEventListener('input', () => {
+      const text = ta.value.trim();
+      if (!text) {
+        importBtn.disabled = true;
+        clearError();
+        return;
+      }
+      try {
+        parseDiscordAlert(text);
+        clearError();
+        importBtn.disabled = false;
+      } catch (e) {
+        showError(e.message);
+        importBtn.disabled = true;
       }
     });
 
-    // Close on Escape key
+    // ESC to close
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modalElement && modalElement.style.display === 'flex') {
-        closeModal();
-      }
+      if (e.key === 'Escape' && modalEl?.style.display === 'flex') closeModal();
     });
-
-    console.log('✅ Modal created');
   }
 
-  function tryAutoImport(text) {
+  function onManualImport() {
+    const ta = modalEl.querySelector('#alertTextarea');
+    const text = ta.value.trim();
+    if (!text) return;
     try {
       const parsed = parseDiscordAlert(text);
-      
-      // If parsing succeeds, auto-import immediately
-      console.log('🚀 Auto-importing valid alert...');
-      hasAlreadyImported = true; // Prevent duplicate imports
-      populateCalculator(parsed);
+      applyToCalculator(parsed);
+      showToast('Alert imported ✓');
+      window.dispatchEvent(new CustomEvent('alertImported'));
       closeModal();
-      showToast('Alert imported successfully! ✓');
-      
-      // Emit event for auto-snapshot
-      window.dispatchEvent(new CustomEvent('alertImported', { 
-        detail: { source: 'modal', data: parsed }
-      }));
-      
-    } catch (error) {
-      // Show error for invalid alerts
-      showError(error.message);
+    } catch (e) {
+      showError(e.message);
     }
   }
 
-  function populateCalculator(data) {
-    console.log('📊 Populating calculator with:', data);
+  // ---------- APPLY TO CALCULATOR ----------
+  function applyToCalculator(data) {
+    const entryEl = document.getElementById('entryPrice');
+    const stopEl  = document.getElementById('stopLossPrice');
+    const riskEl  = document.getElementById('riskPercentage');
+    if (!entryEl || !stopEl) throw new Error('Calculator inputs not found');
 
-    // Get the input elements
-    const entryPriceInput = document.getElementById('entryPrice');
-    const stopLossInput = document.getElementById('stopLossPrice');
-    const riskPercentageInput = document.getElementById('riskPercentage');
+    entryEl.value = Number(data.entry).toFixed(2);
+    stopEl.value  = Number(data.stop).toFixed(2);
+    if (data.riskPct !== undefined && riskEl) riskEl.value = data.riskPct;
 
-    if (!entryPriceInput || !stopLossInput) {
-      throw new Error('Calculator input elements not found');
-    }
-
-    // Set the values
-    entryPriceInput.value = data.entry.toFixed(2);
-    stopLossInput.value = data.stop.toFixed(2);
-    
-    if (data.riskPct !== undefined && riskPercentageInput) {
-      riskPercentageInput.value = data.riskPct;
-    }
-
-    // Trigger input events so the calculator recalculates
-    const inputElements = [entryPriceInput, stopLossInput];
-    if (data.riskPct !== undefined && riskPercentageInput) {
-      inputElements.push(riskPercentageInput);
-    }
-
-    inputElements.forEach(element => {
-      if (element) {
-        // Trigger both input and change events
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-        element.dispatchEvent(new Event('blur', { bubbles: true }));
-      }
+    [entryEl, stopEl, riskEl].forEach((el) => {
+      if (!el) return;
+      el.dispatchEvent(new Event('input',  { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
     });
-
-    // Force a recalculation by focusing and bluring the entry price
-    setTimeout(() => {
-      entryPriceInput.focus();
-      entryPriceInput.blur();
-    }, 100);
-
-    console.log('✅ Calculator populated successfully');
+    // nudge
+    setTimeout(() => { entryEl.focus(); entryEl.blur(); }, 60);
   }
 
-  function showError(message) {
-    const textarea = modalElement.querySelector('#alertTextarea');
-    const errorElement = modalElement.querySelector('#alertError');
-    
-    textarea.classList.add('error');
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-  }
-
-  function clearError() {
-    if (!modalElement) return;
-    
-    const textarea = modalElement.querySelector('#alertTextarea');
-    const errorElement = modalElement.querySelector('#alertError');
-    
-    textarea.classList.remove('error');
-    errorElement.textContent = '';
-    errorElement.style.display = 'none';
+  // ---------- FEEDBACK HELPERS ----------
+  function ensureToastHost() {
+    if (!document.getElementById('toastHost')) {
+      const host = document.createElement('div');
+      host.id = 'toastHost';
+      document.body.appendChild(host);
+    }
   }
 
   function showToast(message) {
-    const toastHost = document.getElementById('toastHost');
-    if (!toastHost) {
-      console.error('Toast container not found');
-      return;
-    }
-
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    
-    toastHost.appendChild(toast);
-    
-    // Animate in
-    requestAnimationFrame(() => {
-      toast.classList.add('visible');
-    });
-
-    // Animate out and remove
+    let host = document.getElementById('toastHost');
+    if (!host) { ensureToastHost(); host = document.getElementById('toastHost'); }
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = message;
+    host.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('visible'));
     setTimeout(() => {
-      toast.classList.remove('visible');
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.remove();
-        }
-      }, 300);
+      el.classList.remove('visible');
+      setTimeout(() => el.remove(), 250);
     }, 2400);
   }
 
-  console.log('✅ Import Alert module initialized');
+  function showError(msg) {
+    if (!modalEl) return;
+    const ta  = modalEl.querySelector('#alertTextarea');
+    const err = modalEl.querySelector('#alertError');
+    ta.classList.add('error');
+    err.textContent = msg || 'Invalid alert';
+    err.style.display = 'block';
+  }
+
+  function clearError() {
+    if (!modalEl) return;
+    const ta  = modalEl.querySelector('#alertTextarea');
+    const err = modalEl.querySelector('#alertError');
+    ta.classList.remove('error');
+    err.textContent = '';
+    err.style.display = 'none';
+  }
 }
