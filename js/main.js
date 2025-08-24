@@ -25,6 +25,9 @@ class App {
         // Initialize journal (placeholder for now)
         this.journal.init();
 
+        // ✅ Initialize import alert feature
+        initImportAlert();
+
         // Set up any global event listeners
         this.setupGlobalEvents();
 
@@ -58,4 +61,3 @@ if (document.readyState === 'loading') {
 } else {
     new App();
 }
-
