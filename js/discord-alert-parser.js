@@ -1,35 +1,82 @@
-// js/discord-alert-parser.js
+// Discord Alert Parser Module
 // Parses Discord-style trade alerts and returns { entry, stop, riskPct? } or throws Error.
 
-export function parseDiscordAlert(raw) {
-  if (!raw || typeof raw !== 'string') {
-    throw new Error('Paste an alert to import.');
+export function parseDiscordAlert(rawText) {
+  if (!rawText || typeof rawText !== 'string') {
+    throw new Error('Please paste a Discord alert first');
   }
 
-  const text = raw.trim();
-  const toNum = (s) => {
-    const clean = String(s).replace(/[, ]+/g, '');
-    return Number(clean);
+  const text = rawText.trim();
+  console.log('🔍 Parsing alert text:', text);
+
+  // Helper function to convert string to number, removing commas
+  const toNumber = (str) => {
+    const cleaned = String(str).replace(/[, ]+/g, '');
+    return parseFloat(cleaned);
   };
 
-  const entryRe = /^(?:\s)*(?:adding|add|starter)[^\n]*@\s*([\d,]+(?:\.\d+)?)/gim;
-  const stopRe  = /^(?:\s)*(?:stop(?:\s*loss)?|sl)[^\n]*@\s*([\d,]+(?:\.\d+)?)/gim;
-  const riskRe  = /^(?:\s)*(?:risk(?:ing)?)[^\d%]*?(\d+(?:\.\d+)?)\s*%?/gim;
+  // More flexible regex patterns to match various Discord alert formats
+  const patterns = [
+    // Pattern 1: Standard format
+    {
+      entry: /(?:adding|add|starter).*?(?:\$[A-Z]+)?.*?@\s*\$?([0-9,]+\.?[0-9]*)/i,
+      stop: /(?:stop\s*(?:loss)?|sl).*?@\s*\$?([0-9,]+\.?[0-9]*)/i,
+      risk: /(?:risk(?:ing)?)[^\d]*?([0-9]+(?:\.[0-9]+)?)\s*%/i
+    },
+    // Pattern 2: Multi-line format
+    {
+      entry: /(?:adding|add|starter)[\s\S]*?@\s*\$?([0-9,]+\.?[0-9]*)/i,
+      stop: /(?:stop[\s\S]*?loss|sl)[\s\S]*?@\s*\$?([0-9,]+\.?[0-9]*)/i,
+      risk: /(?:risk(?:ing)?)[\s\S]*?([0-9]+(?:\.[0-9]+)?)\s*%/i
+    }
+  ];
 
-  const entryMatch = entryRe.exec(text);
-  const stopMatch  = stopRe.exec(text);
-  const riskMatch  = riskRe.exec(text);
+  let entry, stop, riskPct;
 
-  const entry = entryMatch ? toNum(entryMatch[1]) : NaN;
-  const stop  = stopMatch  ? toNum(stopMatch[1])  : NaN;
-  const riskPct = riskMatch ? Number(riskMatch[1]) : undefined;
+  // Try each pattern until we find a match
+  for (const pattern of patterns) {
+    const entryMatch = text.match(pattern.entry);
+    const stopMatch = text.match(pattern.stop);
+    const riskMatch = text.match(pattern.risk);
 
-  if (!isFinite(entry)) throw new Error('Could not find a valid entry price.');
-  if (!isFinite(stop))  throw new Error('Could not find a valid stop price.');
-  if (!(stop < entry))  throw new Error('Stop must be below entry for long trades.');
-  if (riskPct != null && !(riskPct >= 0 && riskPct <= 100)) {
-    throw new Error('Risk% must be between 0 and 100.');
+    if (entryMatch) entry = toNumber(entryMatch[1]);
+    if (stopMatch) stop = toNumber(stopMatch[1]);
+    if (riskMatch) riskPct = parseFloat(riskMatch[1]);
+
+    // If we found both required values, break
+    if (!isNaN(entry) && !isNaN(stop)) {
+      break;
+    }
   }
 
-  return { entry, stop, riskPct };
+  console.log('📊 Parsed values:', { entry, stop, riskPct });
+
+  // Validation
+  if (isNaN(entry) || entry <= 0) {
+    throw new Error('Could not find a valid entry price. Please check the format.');
+  }
+
+  if (isNaN(stop) || stop <= 0) {
+    throw new Error('Could not find a valid stop loss price. Please check the format.');
+  }
+
+  if (stop >= entry) {
+    throw new Error('Stop loss must be below entry price (long positions only).');
+  }
+
+  if (riskPct !== undefined) {
+    if (isNaN(riskPct) || riskPct <= 0 || riskPct > 100) {
+      throw new Error('Risk percentage must be between 0 and 100.');
+    }
+    
+    if (riskPct > 10) {
+      throw new Error('Risk percentage seems high (>10%). Please verify.');
+    }
+  }
+
+  return {
+    entry: entry,
+    stop: stop,
+    riskPct: riskPct
+  };
 }
