@@ -115,34 +115,65 @@ Risking 1%
     modalElement.querySelector('.modal-close').addEventListener('click', closeModal);
     modalElement.querySelector('#cancelImport').addEventListener('click', closeModal);
 
-    // Auto-import logic with debouncing to prevent double-imports
+    // Auto-import logic with smart detection to prevent premature imports
     const textarea = modalElement.querySelector('#alertTextarea');
+    let isUserTyping = false;
+    let lastInputTime = 0;
 
     const scheduleAutoImport = (text, delay = 500) => {
       if (hasAlreadyImported) return;
       
       clearTimeout(importTimeout);
       importTimeout = setTimeout(() => {
-        if (!hasAlreadyImported) {
+        if (!hasAlreadyImported && !isUserTyping) {
           tryAutoImport(text);
         }
       }, delay);
     };
 
+    // Track typing state to prevent premature imports
+    textarea.addEventListener('keydown', () => {
+      isUserTyping = true;
+      lastInputTime = Date.now();
+    });
+
+    textarea.addEventListener('keyup', () => {
+      setTimeout(() => {
+        const timeSinceLastInput = Date.now() - lastInputTime;
+        if (timeSinceLastInput >= 1000) { // 1 second of no typing
+          isUserTyping = false;
+        }
+      }, 1000);
+    });
+
+    // Fast auto-import on paste (user expects immediate action)
     textarea.addEventListener('paste', () => {
+      isUserTyping = false; // Paste is intentional, not typing
       setTimeout(() => {
         const text = textarea.value.trim();
         if (text) {
-          scheduleAutoImport(text, 100); // Faster on paste
+          scheduleAutoImport(text, 300); // Quick but not instant
         }
       }, 50);
     });
 
+    // Conservative auto-import on typing (wait for user to stop)
     textarea.addEventListener('input', () => {
       clearError();
+      lastInputTime = Date.now();
+      
       const text = textarea.value.trim();
-      if (text) {
-        scheduleAutoImport(text, 800); // Slower on typing to avoid interrupting
+      if (text && !isUserTyping) {
+        // Only auto-import if user isn't actively typing
+        scheduleAutoImport(text, 1500);
+      } else if (text) {
+        // Just validate without importing while typing
+        try {
+          parseDiscordAlert(text);
+          clearError();
+        } catch (error) {
+          showError(error.message);
+        }
       }
     });
 
