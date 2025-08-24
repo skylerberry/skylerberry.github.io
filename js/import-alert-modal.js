@@ -95,7 +95,6 @@ Risking 1%
         </div>
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="cancelImport">Cancel</button>
-          <button type="button" class="btn-primary" id="confirmImport">Import</button>
         </div>
       </div>
     `;
@@ -109,15 +108,27 @@ Risking 1%
 
     modalElement.querySelector('.modal-close').addEventListener('click', closeModal);
     modalElement.querySelector('#cancelImport').addEventListener('click', closeModal);
-    modalElement.querySelector('#confirmImport').addEventListener('click', onConfirmImport);
+
+    // Auto-import on paste with validation
+    const textarea = modalElement.querySelector('#alertTextarea');
+    textarea.addEventListener('paste', () => {
+      setTimeout(() => {
+        const text = textarea.value.trim();
+        if (text) {
+          tryAutoImport(text);
+        }
+      }, 100);
+    });
 
     // Real-time validation on input
-    const textarea = modalElement.querySelector('#alertTextarea');
     textarea.addEventListener('input', () => {
       clearError();
       const text = textarea.value.trim();
       if (text) {
-        validateAlert(text);
+        // Small delay to allow for complete typing
+        setTimeout(() => {
+          tryAutoImport(text);
+        }, 500);
       }
     });
 
@@ -131,38 +142,18 @@ Risking 1%
     console.log('✅ Modal created');
   }
 
-  function validateAlert(text) {
+  function tryAutoImport(text) {
     try {
-      parseDiscordAlert(text);
-      // If we get here, the alert is valid
-      const textarea = modalElement.querySelector('#alertTextarea');
-      textarea.classList.remove('error');
-      return true;
-    } catch (error) {
-      showError(error.message);
-      return false;
-    }
-  }
-
-  function onConfirmImport() {
-    const textarea = modalElement.querySelector('#alertTextarea');
-    const alertText = textarea.value.trim();
-
-    if (!alertText) {
-      showError('Please paste a Discord alert first');
-      return;
-    }
-
-    try {
-      console.log('🔄 Processing alert import...');
-      const parsed = parseDiscordAlert(alertText);
+      const parsed = parseDiscordAlert(text);
       
+      // If parsing succeeds, auto-import immediately
+      console.log('🚀 Auto-importing valid alert...');
       populateCalculator(parsed);
       closeModal();
       showToast('Alert imported successfully! ✓');
       
     } catch (error) {
-      console.error('❌ Import failed:', error);
+      // Show error for invalid alerts
       showError(error.message);
     }
   }
