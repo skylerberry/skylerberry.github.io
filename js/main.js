@@ -4,6 +4,7 @@ import { Journal } from "./journal.js"
 import { AppState } from "./state.js"
 import { ThemeManager } from "./theme.js"
 import { initImportAlert } from "./import-alert-modal.js"
+import { initLogbookLite } from "./logbook-lite.js"
 
 class App {
   constructor() {
@@ -33,6 +34,14 @@ class App {
       console.log("✅ Import Alert feature loaded")
     } catch (error) {
       console.error("❌ Failed to initialize Import Alert:", error)
+    }
+
+    // Initialize logbook lite (reads from state snapshots)
+    try {
+      initLogbookLite(this.state, { autoSnapshotOnImport: true })
+      console.log("✅ LogbookLite feature loaded")
+    } catch (error) {
+      console.error("❌ Failed to initialize LogbookLite:", error)
     }
 
     // Set up any global event listeners
