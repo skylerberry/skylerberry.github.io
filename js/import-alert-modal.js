@@ -22,6 +22,69 @@ export function initImportAlert() {
       return;
     }
 
+  // Smart paste function - tries clipboard first, falls back to modal
+  async function handleSmartPaste() {
+    console.log('📋 Attempting smart paste...');
+    
+    try {
+      // Check if clipboard API is available
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        console.log('📝 Clipboard API not available, opening modal');
+        openModal();
+        return;
+      }
+
+      // Try to read clipboard
+      const clipboardText = await navigator.clipboard.readText();
+      
+      if (!clipboardText || clipboardText.trim() === '') {
+        console.log('📝 Clipboard empty, opening modal');
+        showToast('Clipboard is empty - paste your alert in the modal');
+        openModal();
+        return;
+      }
+
+      console.log('📋 Found clipboard content, attempting to parse...');
+      
+      // Try to parse the clipboard content
+      const parsed = parseDiscordAlert(clipboardText.trim());
+      
+      // If we get here, parsing succeeded!
+      console.log('🚀 Smart paste successful!');
+      populateCalculator(parsed);
+      showToast('Alert pasted successfully! ⚡');
+      
+    } catch (error) {
+      console.log('📝 Smart paste failed:', error.message);
+      
+      // Graceful fallback to modal
+      if (error.message.includes('Clipboard')) {
+        showToast('Unable to access clipboard - use the modal instead');
+      } else {
+        showToast('Invalid alert format - opening editor');
+      }
+      
+      openModal();
+      
+      // If we have clipboard content, pre-populate the modal
+      try {
+        const clipboardText = await navigator.clipboard.readText();
+        if (clipboardText && clipboardText.trim()) {
+          setTimeout(() => {
+            const textarea = modalElement?.querySelector('#alertTextarea');
+            if (textarea) {
+              textarea.value = clipboardText.trim();
+              // Trigger validation
+              textarea.dispatchEvent(new Event('input'));
+            }
+          }, 100);
+        }
+      } catch (e) {
+        // Ignore clipboard errors for pre-population
+      }
+    }
+  }
+
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'import-alert-bar';
     buttonContainer.innerHTML = `
