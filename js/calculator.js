@@ -343,7 +343,7 @@ export class Calculator {
             limitedShares,
             limitedPositionSize,
             riskPerShare,
-            hadValidTargetPrice
+            hasValidTargetPrice
         });
 
     }
@@ -562,4 +562,5 @@ export class Calculator {
         console.log('📊 Calculation snapshot emitted:', snapshot);
     }
 }
+
 
