@@ -1,5 +1,6 @@
 // Main application entry point
 import { Calculator } from './calculator.js';
+import { initImportAlert } from './import-alert-modal.js';
 import { Journal } from './journal.js';
 import { AppState } from './state.js';
 import { ThemeManager } from './theme.js';
@@ -57,3 +58,4 @@ if (document.readyState === 'loading') {
 } else {
     new App();
 }
+
