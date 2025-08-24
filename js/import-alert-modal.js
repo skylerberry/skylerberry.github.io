@@ -109,28 +109,46 @@ Risking 1%
     modalElement.querySelector('.modal-close').addEventListener('click', closeModal);
     modalElement.querySelector('#cancelImport').addEventListener('click', closeModal);
 
-    // Auto-import on paste with validation
+    // Auto-import logic with debouncing to prevent double-imports
     const textarea = modalElement.querySelector('#alertTextarea');
+    let importTimeout = null;
+    let hasAlreadyImported = false;
+
+    const scheduleAutoImport = (text, delay = 500) => {
+      if (hasAlreadyImported) return;
+      
+      clearTimeout(importTimeout);
+      importTimeout = setTimeout(() => {
+        if (!hasAlreadyImported) {
+          tryAutoImport(text);
+        }
+      }, delay);
+    };
+
     textarea.addEventListener('paste', () => {
       setTimeout(() => {
         const text = textarea.value.trim();
         if (text) {
-          tryAutoImport(text);
+          scheduleAutoImport(text, 100); // Faster on paste
         }
-      }, 100);
+      }, 50);
     });
 
-    // Real-time validation on input
     textarea.addEventListener('input', () => {
       clearError();
       const text = textarea.value.trim();
       if (text) {
-        // Small delay to allow for complete typing
-        setTimeout(() => {
-          tryAutoImport(text);
-        }, 500);
+        scheduleAutoImport(text, 800); // Slower on typing to avoid interrupting
       }
     });
+
+    // Reset the import flag when modal opens
+    const originalOpenModal = openModal;
+    openModal = function() {
+      hasAlreadyImported = false;
+      clearTimeout(importTimeout);
+      originalOpenModal();
+    };
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
@@ -148,6 +166,7 @@ Risking 1%
       
       // If parsing succeeds, auto-import immediately
       console.log('🚀 Auto-importing valid alert...');
+      hasAlreadyImported = true; // Prevent duplicate imports
       populateCalculator(parsed);
       closeModal();
       showToast('Alert imported successfully! ✓');
