@@ -982,7 +982,8 @@ body.dark-mode .max-account-button.active {
 
 /* Import button container */
 .import-alert-bar {
-    margin-top: 15px;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     display: flex;
     justify-content: center;
 }
@@ -1033,7 +1034,7 @@ body.dark-mode .max-account-button.active {
     max-width: 640px;
     width: 95%;
     background: #fff;
-    border-radius: var(--border-radius);
+    border-radius: 12px;
     box-shadow: var(--shadow-md);
     overflow: hidden;
     animation: modalSlideIn 0.2s ease-out;
@@ -1103,6 +1104,8 @@ body.dark-mode .max-account-button.active {
     line-height: 1.5;
     resize: vertical;
     min-height: 120px;
+    max-height: 300px;
+    max-width: 100%;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
