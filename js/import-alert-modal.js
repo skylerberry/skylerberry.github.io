@@ -62,7 +62,7 @@ export function initImportAlert() {
       console.log('📝 Smart paste failed:', err?.message || err);
       showToast(
         String(err?.message || '').includes('Clipboard')
-          ? 'Unable to access clipboard — use the modal instead'
+          ? 'Unable to access clipboard — using editor instead'
           : 'Invalid alert format — opening editor'
       );
       openModal();
