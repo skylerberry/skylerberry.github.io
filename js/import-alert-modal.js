@@ -12,6 +12,8 @@ export function initImportAlert() {
   
   // Modal will be created when needed
   let modalElement = null;
+  let importTimeout = null;
+  let hasAlreadyImported = false;
 
   function createImportButton() {
     const subtitle = document.querySelector('.calculator-subtitle');
@@ -48,6 +50,10 @@ export function initImportAlert() {
 
   function openModal() {
     console.log('📝 Opening import modal');
+
+    // Reset import state for new modal session
+    hasAlreadyImported = false;
+    clearTimeout(importTimeout);
 
     if (!modalElement) {
       createModal();
@@ -111,8 +117,6 @@ Risking 1%
 
     // Auto-import logic with debouncing to prevent double-imports
     const textarea = modalElement.querySelector('#alertTextarea');
-    let importTimeout = null;
-    let hasAlreadyImported = false;
 
     const scheduleAutoImport = (text, delay = 500) => {
       if (hasAlreadyImported) return;
@@ -141,14 +145,6 @@ Risking 1%
         scheduleAutoImport(text, 800); // Slower on typing to avoid interrupting
       }
     });
-
-    // Reset the import flag when modal opens
-    const originalOpenModal = openModal;
-    openModal = function() {
-      hasAlreadyImported = false;
-      clearTimeout(importTimeout);
-      originalOpenModal();
-    };
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
