@@ -338,6 +338,14 @@ export class Calculator {
         this.renderResults(results);
         this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
+        // Emit snapshot for logbook (after all calculations are done)
+        this.emitCalculationSnapshot(inputs, results, {
+            limitedShares,
+            limitedPositionSize,
+            riskPerShare,
+            hadValidTargetPrice
+        });
+
     }
 
     renderResults(results) {
@@ -515,4 +523,43 @@ export class Calculator {
         toggleClass(percentOfAccountCard, 'limited', isActuallyLimited);
         toggleClass(positionSizeCard, 'limited', isActuallyLimited);
     }
+
+    emitCalculationSnapshot(inputs, results, calculatedValues) {
+                // Create a clean data snapshot with raw numbers (not formatted strings)
+        const snapshot = {
+            timestamp: new Date().toISOString(),
+            inputs: {
+                entryPrice: inputs.entryPrice,
+                stopLossPrice: inputs.stopLossPrice,
+                riskPercentage: inputs.riskPercentage,
+                accountSize: inputs.accountSize,
+                maxAccountPercentage: inputs.maxAccountPercentage,
+                targetPrice: inputs.targetPrice
+            },
+            results: {
+                shares: calculatedValues.limitedShares,
+                positionSize: calculatedValues.limitedPositionSize,
+                riskDollars: calculatedValues.limitedShares * calculatedValues.riskPerShare,
+                stopDistancePct: (calculatedValues.riskPerShare / inputs.entryPrice) * 100,
+                rMultiple: inputs.targetPrice > inputs.entryPrice 
+                    ? calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice)
+                    : null,
+                fiveRTarget: inputs.entryPrice + (5 * calculatedValues.riskPerShare),
+                roiPct: calculatedValues.hasValidTargetPrice 
+                    ? calculateROI((inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares, calculatedValues.limitedPositionSize)
+                    : null,
+                percentOfAccount: (calculatedValues.limitedPositionSize / inputs.accountSize) * 100,
+                profitPerShare: calculatedValues.hasValidTargetPrice ? inputs.targetPrice - inputs.entryPrice : null,
+                totalProfit: calculatedValues.hasValidTargetPrice ? (inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares : null,
+                riskReward: calculatedValues.hasValidTargetPrice ? ((inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares) / (calculatedValues.limitedShares * calculatedValues.riskPerShare) : null
+            }
+        };
+
+        // Cache on state and emit event
+        this.state.latestCalc = snapshot;
+        this.state.emit('calc:recomputed', snapshot);
+        
+        console.log('📊 Calculation snapshot emitted:', snapshot);
+    }
 }
+
