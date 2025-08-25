@@ -15,6 +15,16 @@ export function parseDiscordAlert(rawText) {
     return parseFloat(cleaned);
   };
 
+  // Helper function to extract and normalize ticker
+  const extractTicker = (text) => {
+    // Look for $TICKER pattern
+    const tickerMatch = text.match(/\$([A-Z0-9.-]+)/i);
+    if (tickerMatch) {
+      return tickerMatch[1].toUpperCase();
+    }
+    return null;
+  };
+
   // More flexible regex patterns to match various Discord alert formats
   const patterns = [
     // Pattern 1: Standard format
@@ -31,7 +41,10 @@ export function parseDiscordAlert(rawText) {
     }
   ];
 
-  let entry, stop, riskPct;
+  let entry, stop, riskPct, ticker;
+
+  // Extract ticker first
+  ticker = extractTicker(text);
 
   // Try each pattern until we find a match
   for (const pattern of patterns) {
@@ -49,7 +62,7 @@ export function parseDiscordAlert(rawText) {
     }
   }
 
-  console.log('📊 Parsed values:', { entry, stop, riskPct });
+  console.log('📊 Parsed values:', { entry, stop, riskPct, ticker });
 
   // Validation
   if (isNaN(entry) || entry <= 0) {
@@ -77,6 +90,7 @@ export function parseDiscordAlert(rawText) {
   return {
     entry: entry,
     stop: stop,
-    riskPct: riskPct
+    riskPct: riskPct,
+    ticker: ticker
   };
 }
