@@ -142,16 +142,18 @@ export function initImportAlert() {
 
   // ---------- APPLY TO CALCULATOR ----------
   function applyToCalculator(data) {
+    const tickerEl = document.getElementById('tickerSymbol');
     const entryEl = document.getElementById('entryPrice');
     const stopEl  = document.getElementById('stopLossPrice');
     const riskEl  = document.getElementById('riskPercentage');
     if (!entryEl || !stopEl) throw new Error('Calculator inputs not found');
 
+    if (data.ticker && tickerEl) tickerEl.value = data.ticker;
     entryEl.value = Number(data.entry).toFixed(2);
     stopEl.value  = Number(data.stop).toFixed(2);
     if (data.riskPct !== undefined && riskEl) riskEl.value = data.riskPct;
 
-    [entryEl, stopEl, riskEl].forEach((el) => {
+    [tickerEl, entryEl, stopEl, riskEl].forEach((el) => {
       if (!el) return;
       el.dispatchEvent(new Event('input',  { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
