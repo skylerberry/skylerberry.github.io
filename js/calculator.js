@@ -4,6 +4,7 @@ import {
     formatPercentage, 
     sanitizeInput, 
     convertShorthand,
+    normalizeTicker,
     debounce,
     validateTradeInputs,
     updateElement,
@@ -27,14 +28,15 @@ export class Calculator {
 
     getElements() {
         return {
-            inputs: {
-                accountSize: document.getElementById('accountSize'),
-                riskPercentage: document.getElementById('riskPercentage'),
-                maxAccountPercentage: document.getElementById('maxAccountPercentage'),
-                entryPrice: document.getElementById('entryPrice'),
-                stopLossPrice: document.getElementById('stopLossPrice'),
-                targetPrice: document.getElementById('targetPrice')
-            },
+                    inputs: {
+            accountSize: document.getElementById('accountSize'),
+            riskPercentage: document.getElementById('riskPercentage'),
+            maxAccountPercentage: document.getElementById('maxAccountPercentage'),
+            tickerSymbol: document.getElementById('tickerSymbol'),
+            entryPrice: document.getElementById('entryPrice'),
+            stopLossPrice: document.getElementById('stopLossPrice'),
+            targetPrice: document.getElementById('targetPrice')
+        },
             results: {
                 shares: document.getElementById('sharesValue'),
                 positionSize: document.getElementById('positionSizeValue'),
@@ -134,6 +136,14 @@ export class Calculator {
                 this.updateStateFromInput('accountSize', numberValue);
             }
             this.calculate(); // Immediate calculation on blur
+        });
+
+        // Ticker symbol - normalize and uppercase
+        this.elements.inputs.tickerSymbol.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            const normalized = normalizeTicker(inputValue);
+            e.target.value = normalized;
+            this.updateStateFromInput('tickerSymbol', normalized);
         });
 
         // Other price inputs - handle empty values properly
@@ -385,20 +395,33 @@ export class Calculator {
     }
 
     displayErrors(errors) {
-        // Clear existing errors
+        // Clear existing errors and error states
         Object.values(this.elements.errors).forEach(errorElement => {
             updateElement(errorElement, '');
             toggleClass(errorElement, 'hidden', true);
         });
 
-        // Display new errors
+        // Clear error classes from all inputs
+        Object.values(this.elements.inputs).forEach(input => {
+            toggleClass(input, 'error', false);
+        });
+
+        // Display new errors and apply error states
         errors.forEach(({ field, message }) => {
             if (field === 'stopLossPrice' && this.elements.errors.stopLoss) {
                 updateElement(this.elements.errors.stopLoss, message);
                 toggleClass(this.elements.errors.stopLoss, 'hidden', false);
+                // Apply error state to stop loss input
+                if (this.elements.inputs.stopLossPrice) {
+                    toggleClass(this.elements.inputs.stopLossPrice, 'error', true);
+                }
             } else if (field === 'targetPrice' && this.elements.errors.targetPrice) {
                 updateElement(this.elements.errors.targetPrice, message);
                 toggleClass(this.elements.errors.targetPrice, 'hidden', false);
+                // Apply error state to target price input
+                if (this.elements.inputs.targetPrice) {
+                    toggleClass(this.elements.inputs.targetPrice, 'error', true);
+                }
             }
         });
     }
@@ -455,10 +478,15 @@ export class Calculator {
             } else if (key === 'maxAccountPercentage') {
                 input.value = 100;
                 this.updateStateFromInput(key, 100);
+            } else if (key === 'tickerSymbol') {
+                input.value = '';
+                this.updateStateFromInput(key, '');
             } else {
                 input.value = '';
                 this.updateStateFromInput(key, 0);
             }
+            // Clear error state from input
+            toggleClass(input, 'error', false);
         });
 
         // Reset buttons
@@ -529,6 +557,7 @@ export class Calculator {
         const snapshot = {
             timestamp: new Date().toISOString(),
             inputs: {
+                tickerSymbol: inputs.tickerSymbol,
                 entryPrice: inputs.entryPrice,
                 stopLossPrice: inputs.stopLossPrice,
                 riskPercentage: inputs.riskPercentage,
