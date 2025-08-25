@@ -80,6 +80,20 @@ export function parseFloat(value) {
 }
 
 // ==========================================================================
+// TICKER UTILITIES
+// ==========================================================================
+
+export function normalizeTicker(ticker) {
+  if (!ticker || typeof ticker !== 'string') return ''
+  
+  // Strip leading $ and uppercase
+  const normalized = ticker.replace(/^\$/, '').toUpperCase()
+  
+  // Only allow letters, digits, dots, and hyphens
+  return normalized.replace(/[^A-Z0-9.-]/g, '')
+}
+
+// ==========================================================================
 // PERFORMANCE UTILITIES
 // ==========================================================================
 
