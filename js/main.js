@@ -5,6 +5,7 @@ import { AppState } from "./state.js"
 import { ThemeManager } from "./theme.js"
 import { initImportAlert } from "./import-alert-modal.js"
 import { initLogbookLite } from "./logbook-lite.js"
+import { tooltipSetup } from "./tooltip-setup.js"
 
 class App {
   constructor() {
@@ -42,6 +43,14 @@ class App {
       console.log("✅ LogbookLite feature loaded")
     } catch (error) {
       console.error("❌ Failed to initialize LogbookLite:", error)
+    }
+
+    // Initialize simple tooltip system
+    try {
+      tooltipSetup.init()
+      console.log("✅ Simple tooltip system loaded")
+    } catch (error) {
+      console.error("❌ Failed to initialize tooltip system:", error)
     }
 
     // Set up any global event listeners
