@@ -4,6 +4,7 @@ import {
     formatPercentage, 
     sanitizeInput, 
     convertShorthand,
+    normalizeTicker,
     debounce,
     validateTradeInputs,
     updateElement,
@@ -27,14 +28,15 @@ export class Calculator {
 
     getElements() {
         return {
-            inputs: {
-                accountSize: document.getElementById('accountSize'),
-                riskPercentage: document.getElementById('riskPercentage'),
-                maxAccountPercentage: document.getElementById('maxAccountPercentage'),
-                entryPrice: document.getElementById('entryPrice'),
-                stopLossPrice: document.getElementById('stopLossPrice'),
-                targetPrice: document.getElementById('targetPrice')
-            },
+                    inputs: {
+            accountSize: document.getElementById('accountSize'),
+            riskPercentage: document.getElementById('riskPercentage'),
+            maxAccountPercentage: document.getElementById('maxAccountPercentage'),
+            tickerSymbol: document.getElementById('tickerSymbol'),
+            entryPrice: document.getElementById('entryPrice'),
+            stopLossPrice: document.getElementById('stopLossPrice'),
+            targetPrice: document.getElementById('targetPrice')
+        },
             results: {
                 shares: document.getElementById('sharesValue'),
                 positionSize: document.getElementById('positionSizeValue'),
@@ -134,6 +136,14 @@ export class Calculator {
                 this.updateStateFromInput('accountSize', numberValue);
             }
             this.calculate(); // Immediate calculation on blur
+        });
+
+        // Ticker symbol - normalize and uppercase
+        this.elements.inputs.tickerSymbol.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            const normalized = normalizeTicker(inputValue);
+            e.target.value = normalized;
+            this.updateStateFromInput('tickerSymbol', normalized);
         });
 
         // Other price inputs - handle empty values properly
@@ -285,8 +295,16 @@ export class Calculator {
         const limitedShares = Math.floor(limitedPositionSize / inputs.entryPrice);
         const limitedPercentOfAccount = (limitedPositionSize / inputs.accountSize) * 100;
         
+        // Calculate actual risk amount and percentage
+        const actualRiskAmount = limitedShares * riskPerShare;
+        const actualRiskPercentage = (actualRiskAmount / inputs.accountSize) * 100;
+        const intendedRiskPercentage = inputs.riskPercentage;
+        
         // Determine if position was actually limited (only show red if we had to reduce it)
         const isActuallyLimited = limitedPositionSize < originalPositionSize;
+        
+        // Create risk percentage display (clean format like Stop Distance)
+        const riskPercentageDisplay = `(${actualRiskPercentage.toFixed(2)}%)`;
 
         const results = {
             shares: formatNumber(limitedShares),
@@ -294,7 +312,7 @@ export class Calculator {
                 ? `<span class="original-percentage">${formatCurrency(originalPositionSize)}</span><span class="limited-percentage">${formatCurrency(limitedPositionSize)}</span>`
                 : formatCurrency(limitedPositionSize),
             stopDistance: `${((riskPerShare / inputs.entryPrice) * 100).toFixed(2)}% (${formatCurrency(riskPerShare)})`,
-            totalRisk: formatCurrency(limitedShares * riskPerShare),
+            totalRisk: `${formatCurrency(actualRiskAmount)} ${riskPercentageDisplay}`,
             percentOfAccount: isActuallyLimited 
                 ? `<span class="original-percentage">${formatPercentage(originalPercentOfAccount)}</span><span class="limited-percentage">${formatPercentage(limitedPercentOfAccount)}</span>`
                 : formatPercentage(limitedPercentOfAccount),
@@ -330,13 +348,21 @@ export class Calculator {
         this.renderResults(results);
         this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
+        // Emit snapshot for logbook (after all calculations are done)
+        this.emitCalculationSnapshot(inputs, results, {
+            limitedShares,
+            limitedPositionSize,
+            riskPerShare,
+            hasValidTargetPrice
+        });
+
     }
 
     renderResults(results) {
         requestAnimationFrame(() => {
             Object.entries(results).forEach(([key, value]) => {
                 if (this.elements.results[key]) {
-                    if (key === 'percentOfAccount' || key === 'positionSize') {
+                    if (key === 'percentOfAccount' || key === 'positionSize' || key === 'totalRisk') {
                         // Use innerHTML for fields that may contain HTML spans
                         this.elements.results[key].innerHTML = value;
                     } else {
@@ -369,20 +395,33 @@ export class Calculator {
     }
 
     displayErrors(errors) {
-        // Clear existing errors
+        // Clear existing errors and error states
         Object.values(this.elements.errors).forEach(errorElement => {
             updateElement(errorElement, '');
             toggleClass(errorElement, 'hidden', true);
         });
 
-        // Display new errors
+        // Clear error classes from all inputs
+        Object.values(this.elements.inputs).forEach(input => {
+            toggleClass(input, 'error', false);
+        });
+
+        // Display new errors and apply error states
         errors.forEach(({ field, message }) => {
             if (field === 'stopLossPrice' && this.elements.errors.stopLoss) {
                 updateElement(this.elements.errors.stopLoss, message);
                 toggleClass(this.elements.errors.stopLoss, 'hidden', false);
+                // Apply error state to stop loss input
+                if (this.elements.inputs.stopLossPrice) {
+                    toggleClass(this.elements.inputs.stopLossPrice, 'error', true);
+                }
             } else if (field === 'targetPrice' && this.elements.errors.targetPrice) {
                 updateElement(this.elements.errors.targetPrice, message);
                 toggleClass(this.elements.errors.targetPrice, 'hidden', false);
+                // Apply error state to target price input
+                if (this.elements.inputs.targetPrice) {
+                    toggleClass(this.elements.inputs.targetPrice, 'error', true);
+                }
             }
         });
     }
@@ -439,10 +478,15 @@ export class Calculator {
             } else if (key === 'maxAccountPercentage') {
                 input.value = 100;
                 this.updateStateFromInput(key, 100);
+            } else if (key === 'tickerSymbol') {
+                input.value = '';
+                this.updateStateFromInput(key, '');
             } else {
                 input.value = '';
                 this.updateStateFromInput(key, 0);
             }
+            // Clear error state from input
+            toggleClass(input, 'error', false);
         });
 
         // Reset buttons
@@ -507,4 +551,45 @@ export class Calculator {
         toggleClass(percentOfAccountCard, 'limited', isActuallyLimited);
         toggleClass(positionSizeCard, 'limited', isActuallyLimited);
     }
+
+    emitCalculationSnapshot(inputs, results, calculatedValues) {
+                // Create a clean data snapshot with raw numbers (not formatted strings)
+        const snapshot = {
+            timestamp: new Date().toISOString(),
+            inputs: {
+                tickerSymbol: inputs.tickerSymbol,
+                entryPrice: inputs.entryPrice,
+                stopLossPrice: inputs.stopLossPrice,
+                riskPercentage: inputs.riskPercentage,
+                accountSize: inputs.accountSize,
+                maxAccountPercentage: inputs.maxAccountPercentage,
+                targetPrice: inputs.targetPrice
+            },
+            results: {
+                shares: calculatedValues.limitedShares,
+                positionSize: calculatedValues.limitedPositionSize,
+                riskDollars: calculatedValues.limitedShares * calculatedValues.riskPerShare,
+                stopDistancePct: (calculatedValues.riskPerShare / inputs.entryPrice) * 100,
+                rMultiple: inputs.targetPrice > inputs.entryPrice 
+                    ? calculateRMultiple(inputs.entryPrice, inputs.targetPrice, inputs.stopLossPrice)
+                    : null,
+                fiveRTarget: inputs.entryPrice + (5 * calculatedValues.riskPerShare),
+                roiPct: calculatedValues.hasValidTargetPrice 
+                    ? calculateROI((inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares, calculatedValues.limitedPositionSize)
+                    : null,
+                percentOfAccount: (calculatedValues.limitedPositionSize / inputs.accountSize) * 100,
+                profitPerShare: calculatedValues.hasValidTargetPrice ? inputs.targetPrice - inputs.entryPrice : null,
+                totalProfit: calculatedValues.hasValidTargetPrice ? (inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares : null,
+                riskReward: calculatedValues.hasValidTargetPrice ? ((inputs.targetPrice - inputs.entryPrice) * calculatedValues.limitedShares) / (calculatedValues.limitedShares * calculatedValues.riskPerShare) : null
+            }
+        };
+
+        // Cache on state and emit event
+        this.state.latestCalc = snapshot;
+        this.state.emit('calc:recomputed', snapshot);
+        
+        console.log('📊 Calculation snapshot emitted:', snapshot);
+    }
 }
+
+
