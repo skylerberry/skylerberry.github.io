@@ -257,6 +257,75 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Trim Strategy Section -->
+                <button type="button" id="trimStrategyButton" class="info-button" aria-expanded="false">
+                    <span id="trimStrategyIcon" class="info-icon">+</span>
+                    Trim Strategy
+                </button>
+
+                <div id="trimStrategyContent" class="trim-content hidden" role="region" aria-expanded="false">
+                    <div class="trim-strategy-container">
+                        <div class="strategy-selection">
+                            <div class="trim-option">
+                                <input type="radio" id="trim-half-1r" name="trimStrategy" value="half-1r" checked>
+                                <label for="trim-half-1r" class="trim-option-label">
+                                    <span class="trim-title">Sell 1/2 position at 1R</span>
+                                    <span class="trim-subtitle">Conservative approach - quick risk reduction</span>
+                                </label>
+                            </div>
+                            <div class="trim-option">
+                                <input type="radio" id="trim-third-2r" name="trimStrategy" value="third-2r">
+                                <label for="trim-third-2r" class="trim-option-label">
+                                    <span class="trim-title">Sell 1/3 position at 2R</span>
+                                    <span class="trim-subtitle">Balanced approach - better risk recovery</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="trim-results">
+                            <div class="trim-section">
+                                <h4 class="trim-section-title">Trim Details</h4>
+                                <div class="trim-details-grid">
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Trim Price</span>
+                                        <span class="trim-value" id="trimPrice">-</span>
+                                    </div>
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Shares to Sell</span>
+                                        <span class="trim-value" id="trimShares">-</span>
+                                    </div>
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Trim Profit</span>
+                                        <span class="trim-value profit" id="trimProfit">-</span>
+                                    </div>
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Risk Recovered</span>
+                                        <span class="trim-value" id="riskRecovered">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="trim-section">
+                                <h4 class="trim-section-title">Remaining Position</h4>
+                                <div class="trim-details-grid">
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Runner Shares</span>
+                                        <span class="trim-value" id="runnerShares">-</span>
+                                    </div>
+                                    <div class="trim-detail">
+                                        <span class="trim-label">Runner Value</span>
+                                        <span class="trim-value" id="runnerValue">-</span>
+                                    </div>
+                                    <div class="trim-detail full-width">
+                                        <span class="trim-label">Exit Strategy</span>
+                                        <span class="trim-value exit-strategy">Close below 10-day MA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 

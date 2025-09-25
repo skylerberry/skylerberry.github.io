@@ -74,6 +74,19 @@ export class Calculator {
                 scenario05: document.getElementById('scenario-0-5'),
                 scenario075: document.getElementById('scenario-0-75'),
                 scenario1: document.getElementById('scenario-1')
+            },
+            trimStrategy: {
+                button: document.getElementById('trimStrategyButton'),
+                icon: document.getElementById('trimStrategyIcon'),
+                content: document.getElementById('trimStrategyContent'),
+                halfOneR: document.getElementById('trim-half-1r'),
+                thirdTwoR: document.getElementById('trim-third-2r'),
+                trimPrice: document.getElementById('trimPrice'),
+                trimShares: document.getElementById('trimShares'),
+                trimProfit: document.getElementById('trimProfit'),
+                riskRecovered: document.getElementById('riskRecovered'),
+                runnerShares: document.getElementById('runnerShares'),
+                runnerValue: document.getElementById('runnerValue')
             }
         };
     }
@@ -242,6 +255,20 @@ export class Calculator {
                 this.addProfitToAccount();
             });
         }
+
+        // Trim strategy toggle
+        this.elements.trimStrategy.button.addEventListener('click', () => {
+            this.toggleTrimStrategy();
+        });
+
+        // Trim strategy radio buttons
+        this.elements.trimStrategy.halfOneR.addEventListener('change', () => {
+            this.calculateTrimStrategy();
+        });
+
+        this.elements.trimStrategy.thirdTwoR.addEventListener('change', () => {
+            this.calculateTrimStrategy();
+        });
     }
 
     updateStateFromInput(key, value) {
@@ -348,6 +375,11 @@ export class Calculator {
         this.renderResults(results);
         this.renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount);
         this.updateRiskScenarios(inputs);
+        // Update trim strategy if it's currently visible
+        if (!this.elements.trimStrategy.content.classList.contains('hidden')) {
+            this.calculateTrimStrategy();
+        }
+
         // Emit snapshot for logbook (after all calculations are done)
         this.emitCalculationSnapshot(inputs, results, {
             limitedShares,
@@ -392,6 +424,7 @@ export class Calculator {
         this.renderResults(emptyResults);
         toggleClass(this.elements.results.profitSection, 'hidden', true);
         this.resetScenarios();
+        this.clearTrimStrategy();
     }
 
     displayErrors(errors) {
@@ -541,6 +574,74 @@ export class Calculator {
             
             console.log(`💰 Added profit $${formatNumber(profit)} to account. New balance: $${formatNumber(newAccountSize)}`);
         }
+    }
+
+    toggleTrimStrategy() {
+        const isHidden = this.elements.trimStrategy.content.classList.toggle('hidden');
+        updateElement(this.elements.trimStrategy.icon, isHidden ? '+' : '−');
+        setAttributes(this.elements.trimStrategy.button, { 'aria-expanded': !isHidden });
+        setAttributes(this.elements.trimStrategy.content, { 'aria-expanded': !isHidden });
+
+        // Calculate trim strategy when opened
+        if (!isHidden) {
+            this.calculateTrimStrategy();
+        }
+    }
+
+    calculateTrimStrategy() {
+        const inputs = this.state.calculator.inputs;
+        const { entryPrice, stopLossPrice } = inputs;
+
+        // Only calculate if we have valid entry and stop prices
+        if (!entryPrice || !stopLossPrice || entryPrice <= stopLossPrice) {
+            this.clearTrimStrategy();
+            return;
+        }
+
+        const riskPerShare = entryPrice - stopLossPrice;
+        const shares = this.state.calculator.results.shares || 0;
+
+        if (shares <= 0) {
+            this.clearTrimStrategy();
+            return;
+        }
+
+        const isHalfOneR = this.elements.trimStrategy.halfOneR.checked;
+
+        let trimPrice, trimShares, riskRecoveredPercent;
+
+        if (isHalfOneR) {
+            // Sell 1/2 at 1R
+            trimPrice = entryPrice + riskPerShare;
+            trimShares = Math.floor(shares / 2);
+            riskRecoveredPercent = 50; // 50% of position at 1R = 50% risk recovered
+        } else {
+            // Sell 1/3 at 2R
+            trimPrice = entryPrice + (2 * riskPerShare);
+            trimShares = Math.floor(shares / 3);
+            riskRecoveredPercent = 67; // 33% of position at 2R = ~67% risk recovered
+        }
+
+        const trimProfit = trimShares * riskPerShare * (isHalfOneR ? 1 : 2);
+        const runnerShares = shares - trimShares;
+        const runnerValue = runnerShares * entryPrice;
+
+        // Update display
+        updateElement(this.elements.trimStrategy.trimPrice, formatCurrency(trimPrice));
+        updateElement(this.elements.trimStrategy.trimShares, formatNumber(trimShares));
+        updateElement(this.elements.trimStrategy.trimProfit, formatCurrency(trimProfit));
+        updateElement(this.elements.trimStrategy.riskRecovered, `${riskRecoveredPercent}%`);
+        updateElement(this.elements.trimStrategy.runnerShares, formatNumber(runnerShares));
+        updateElement(this.elements.trimStrategy.runnerValue, formatCurrency(runnerValue));
+    }
+
+    clearTrimStrategy() {
+        updateElement(this.elements.trimStrategy.trimPrice, '-');
+        updateElement(this.elements.trimStrategy.trimShares, '-');
+        updateElement(this.elements.trimStrategy.trimProfit, '-');
+        updateElement(this.elements.trimStrategy.riskRecovered, '-');
+        updateElement(this.elements.trimStrategy.runnerShares, '-');
+        updateElement(this.elements.trimStrategy.runnerValue, '-');
     }
 
     renderLimitedAccountDisplay(isActuallyLimited, originalPercentOfAccount, limitedPercentOfAccount) {
