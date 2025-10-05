@@ -65,7 +65,7 @@ function flattenSnapshot(snap) {
   
   return {
     timestamp: snap?.timestamp ?? new Date().toISOString(),
-    ticker: inputs.tickerSymbol ?? '', // Now populated from calculator input
+    ticker: snap?.inputs?.tickerSymbol ?? '', // Now populated from calculator input
     entry: inputs.entryPrice ?? null,
     stop: inputs.stopLossPrice ?? null,
     risk_pct: inputs.riskPercentage ?? null,
