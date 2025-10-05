@@ -144,6 +144,7 @@ export class Calculator {
             const normalized = normalizeTicker(inputValue);
             e.target.value = normalized;
             this.updateStateFromInput('tickerSymbol', normalized);
+            this.debouncedCalculate();
         });
 
         // Other price inputs - handle empty values properly
