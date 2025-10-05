@@ -2,7 +2,7 @@ import { loadFromStorage, saveToStorage, STORAGE_KEYS } from "./utils.js"
 
 export class ThemeManager {
   constructor() {
-    this.themeSwitch = document.getElementById("theme-switch")
+    this.themeInputs = document.querySelectorAll('input[name="theme"]')
     this.currentTheme = "light"
     this.isTransitioning = false
   }
@@ -11,27 +11,21 @@ export class ThemeManager {
     try {
       // Detect system preference if no saved theme
       const systemPrefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      const defaultTheme = systemPrefersDark ? "dark" : "light"
+      const defaultTheme = systemPrefersDark ? "midnight" : "light"
 
       // Load saved theme or use system preference
       const savedTheme = loadFromStorage(STORAGE_KEYS.THEME, defaultTheme)
       this.setTheme(savedTheme, false) // Don't animate on initial load
 
-      // Set up theme switch
-      if (this.themeSwitch) {
-        this.themeSwitch.checked = savedTheme === "dark"
-        this.themeSwitch.addEventListener("change", (e) => {
-          this.setTheme(e.target.checked ? "dark" : "light", true)
-        })
-
-        // Add keyboard support
-        this.themeSwitch.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault()
-            this.toggle()
+      // Set up theme inputs
+      this.themeInputs.forEach(input => {
+        input.checked = input.value === savedTheme
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            this.setTheme(e.target.value, true)
           }
         })
-      }
+      })
 
       // Listen for system theme changes
       if (window.matchMedia) {
@@ -40,7 +34,7 @@ export class ThemeManager {
           // Only auto-switch if user hasn't manually set a preference
           const hasManualPreference = localStorage.getItem(STORAGE_KEYS.THEME)
           if (!hasManualPreference) {
-            this.setTheme(e.matches ? "dark" : "light", true)
+            this.setTheme(e.matches ? "midnight" : "light", true)
           }
         })
       }
@@ -65,18 +59,24 @@ export class ThemeManager {
         document.body.style.transition = "background 0.3s ease, color 0.3s ease"
       }
 
-      // Update DOM with new theme
-      const isDark = theme === "dark"
-      document.body.classList.toggle("dark-mode", isDark)
+      // Remove all theme classes
+      document.body.classList.remove("dark-mode", "steel-mode")
+
+      // Apply the correct theme class
+      if (theme === "midnight") {
+        document.body.classList.add("dark-mode")
+      } else if (theme === "steel") {
+        document.body.classList.add("steel-mode")
+      }
+      // light theme has no class (default)
 
       // Update HTML data attribute for CSS targeting
       document.documentElement.setAttribute("data-theme", theme)
 
-      // Update switch state
-      if (this.themeSwitch) {
-        this.themeSwitch.checked = isDark
-        this.themeSwitch.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`)
-      }
+      // Update radio button state
+      this.themeInputs.forEach(input => {
+        input.checked = input.value === theme
+      })
 
       // Update meta theme-color for mobile browsers
       this.updateMetaThemeColor(theme)
@@ -119,14 +119,27 @@ export class ThemeManager {
     }
 
     // Set theme color based on current theme
-    const themeColor = theme === "dark" ? "#0f172a" : "#f0fdf4"
+    let themeColor = "#f0fdf4" // light theme default
+    if (theme === "midnight") {
+      themeColor = "#0f172a"
+    } else if (theme === "steel") {
+      themeColor = "#1f1f1f"
+    }
     themeColorMeta.content = themeColor
   }
 
   toggle() {
     if (this.isTransitioning) return
 
-    const newTheme = this.currentTheme === "light" ? "dark" : "light"
+    // Cycle through themes: light -> midnight -> steel -> light
+    let newTheme = "light"
+    if (this.currentTheme === "light") {
+      newTheme = "midnight"
+    } else if (this.currentTheme === "midnight") {
+      newTheme = "steel"
+    } else if (this.currentTheme === "steel") {
+      newTheme = "light"
+    }
     this.setTheme(newTheme, true)
   }
 
@@ -135,12 +148,12 @@ export class ThemeManager {
   }
 
   isDarkMode() {
-    return this.currentTheme === "dark"
+    return this.currentTheme === "midnight" || this.currentTheme === "steel"
   }
 
   getSystemPreference() {
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark"
+      return "midnight"
     }
     return "light"
   }
@@ -153,8 +166,8 @@ export class ThemeManager {
   }
 
   switchTheme(theme, callback) {
-    if (!["light", "dark"].includes(theme)) {
-      console.warn(`Invalid theme: ${theme}. Use 'light' or 'dark'.`)
+    if (!["light", "midnight", "steel"].includes(theme)) {
+      console.warn(`Invalid theme: ${theme}. Use 'light', 'midnight', or 'steel'.`)
       return
     }
 
@@ -167,9 +180,14 @@ export class ThemeManager {
 }
 
 export function getCurrentTheme() {
-  return document.body.classList.contains("dark-mode") ? "dark" : "light"
+  if (document.body.classList.contains("dark-mode")) {
+    return "midnight"
+  } else if (document.body.classList.contains("steel-mode")) {
+    return "steel"
+  }
+  return "light"
 }
 
 export function isDarkMode() {
-  return document.body.classList.contains("dark-mode")
+  return document.body.classList.contains("dark-mode") || document.body.classList.contains("steel-mode")
 }

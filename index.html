@@ -13,15 +13,25 @@
 
         <!-- Theme Toggle -->
         <div class="theme-toggle-container">
-            <label class="theme-toggle" for="theme-switch">
-                <input type="checkbox" id="theme-switch" aria-label="Toggle dark mode">
-                <span class="toggle-track">
-                    <span class="toggle-indicator">
-                        <span class="toggle-icon light">☀️</span>
-                        <span class="toggle-icon dark">🌙</span>
-                    </span>
-                </span>
-            </label>
+            <div class="theme-segmented-control">
+                <input type="radio" id="theme-light" name="theme" value="light" checked>
+                <label for="theme-light" class="theme-option">
+                    <span class="theme-icon">☀️</span>
+                    <span class="theme-label">Light</span>
+                </label>
+
+                <input type="radio" id="theme-midnight" name="theme" value="midnight">
+                <label for="theme-midnight" class="theme-option">
+                    <span class="theme-icon">🌙</span>
+                    <span class="theme-label">Midnight</span>
+                </label>
+
+                <input type="radio" id="theme-steel" name="theme" value="steel">
+                <label for="theme-steel" class="theme-option">
+                    <span class="theme-icon">🔩</span>
+                    <span class="theme-label">Steel</span>
+                </label>
+            </div>
         </div>
 
         <!-- Main Calculator Section -->
