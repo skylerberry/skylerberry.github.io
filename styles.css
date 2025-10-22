@@ -295,6 +295,169 @@ body {
     font-style: italic;
 }
 
+/* Status Pills */
+.status-pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+.status-open {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-trimmed {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-closed {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+/* Filter Bar */
+.snapshots-filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.filter-btn.active {
+    background: #1CA1F2;
+    color: white;
+    border-color: #1CA1F2;
+}
+
+/* Snapshot Action Row */
+.snapshot-action-row {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.snapshot-status-action {
+    width: 100%;
+    padding: 10px 16px;
+    background: #1CA1F2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.snapshot-status-action:hover {
+    background: #1890d9;
+}
+
+/* Trimmed Info Display */
+.snapshot-trimmed-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+}
+
+.trim-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #78350f;
+}
+
+.trim-detail:last-child {
+    margin-bottom: 0;
+}
+
+.trim-icon {
+    font-size: 14px;
+}
+
+.trim-exit-rule {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #fbbf24;
+    font-weight: 600;
+}
+
+/* Highlight 5R Target */
+.snapshot-5r-highlight {
+    color: #10b981 !important;
+    font-weight: 700 !important;
+}
+
+/* Trim Modal Styles */
+.trim-summary {
+    padding: 12px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.trim-summary p {
+    margin: 4px 0;
+    font-size: 14px;
+    color: #374151;
+}
+
+.trim-preview {
+    margin-top: 12px;
+    padding: 12px;
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    border-radius: 6px;
+}
+
+.trim-preview h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #065f46;
+}
+
+.trim-preview p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #047857;
+}
+
+.input-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
 /* Edit Modal */
 .edit-modal {
     position: fixed;
@@ -455,8 +618,86 @@ body {
     color: #d1d5db;
 }
 
+[data-theme="dark"] .status-open {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+[data-theme="dark"] .status-trimmed {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+[data-theme="dark"] .status-closed {
+    background: #4b5563;
+    color: #d1d5db;
+}
+
+[data-theme="dark"] .snapshots-filter-bar {
+    background: #374151;
+    border-bottom-color: #4b5563;
+}
+
+[data-theme="dark"] .filter-btn {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #f9fafb;
+}
+
+[data-theme="dark"] .filter-btn:hover {
+    background: #6b7280;
+}
+
+[data-theme="dark"] .filter-btn.active {
+    background: #1CA1F2;
+    border-color: #1CA1F2;
+}
+
+[data-theme="dark"] .snapshot-action-row {
+    border-top-color: #4b5563;
+}
+
+[data-theme="dark"] .snapshot-trimmed-info {
+    background: #78350f;
+    border-color: #92400e;
+}
+
+[data-theme="dark"] .trim-detail {
+    color: #fef3c7;
+}
+
+[data-theme="dark"] .trim-exit-rule {
+    border-top-color: #92400e;
+}
+
+[data-theme="dark"] .trim-summary {
+    background: #374151;
+}
+
+[data-theme="dark"] .trim-summary p {
+    color: #f9fafb;
+}
+
+[data-theme="dark"] .trim-preview {
+    background: #064e3b;
+    border-color: #065f46;
+}
+
+[data-theme="dark"] .trim-preview h4 {
+    color: #d1fae5;
+}
+
+[data-theme="dark"] .trim-preview p {
+    color: #a7f3d0;
+}
+
+[data-theme="dark"] .input-hint {
+    color: #9ca3af;
+}
+
 [data-theme="dark"] .edit-group input,
-[data-theme="dark"] .edit-group textarea {
+[data-theme="dark"] .edit-group textarea,
+[data-theme="dark"] .edit-group select {
     background: #374151;
     border-color: #6b7280;
     color: #f9fafb;
@@ -2266,8 +2507,86 @@ body.steel-mode .snapshot-notes .snapshot-value {
     color: #d1d5db;
 }
 
+body.steel-mode .status-open {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+body.steel-mode .status-trimmed {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+body.steel-mode .status-closed {
+    background: #4c4c4c;
+    color: #d1d5db;
+}
+
+body.steel-mode .snapshots-filter-bar {
+    background: #383838;
+    border-bottom-color: #4c4c4c;
+}
+
+body.steel-mode .filter-btn {
+    background: #4c4c4c;
+    border-color: #5a5a5a;
+    color: #f9fafb;
+}
+
+body.steel-mode .filter-btn:hover {
+    background: #5a5a5a;
+}
+
+body.steel-mode .filter-btn.active {
+    background: #1CA1F2;
+    border-color: #1CA1F2;
+}
+
+body.steel-mode .snapshot-action-row {
+    border-top-color: #4c4c4c;
+}
+
+body.steel-mode .snapshot-trimmed-info {
+    background: #78350f;
+    border-color: #92400e;
+}
+
+body.steel-mode .trim-detail {
+    color: #fef3c7;
+}
+
+body.steel-mode .trim-exit-rule {
+    border-top-color: #92400e;
+}
+
+body.steel-mode .trim-summary {
+    background: #383838;
+}
+
+body.steel-mode .trim-summary p {
+    color: #f9fafb;
+}
+
+body.steel-mode .trim-preview {
+    background: #064e3b;
+    border-color: #065f46;
+}
+
+body.steel-mode .trim-preview h4 {
+    color: #d1fae5;
+}
+
+body.steel-mode .trim-preview p {
+    color: #a7f3d0;
+}
+
+body.steel-mode .input-hint {
+    color: #9ca3af;
+}
+
 body.steel-mode .edit-group input,
-body.steel-mode .edit-group textarea {
+body.steel-mode .edit-group textarea,
+body.steel-mode .edit-group select {
     background: #383838;
     border-color: #5a5a5a;
     color: #f9fafb;

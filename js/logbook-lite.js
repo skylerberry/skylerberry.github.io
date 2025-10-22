@@ -62,7 +62,7 @@ function toast(msg) {
 function flattenSnapshot(snap) {
   // Flatten calculation snapshot into a CSV-friendly row
   const { inputs = {}, results = {} } = snap || {};
-  
+
   return {
     timestamp: snap?.timestamp ?? new Date().toISOString(),
     ticker: snap?.inputs?.tickerSymbol ?? '', // Now populated from calculator input
@@ -83,7 +83,11 @@ function flattenSnapshot(snap) {
     profit_per_share: results.profitPerShare ?? null,
     total_profit: results.totalProfit ?? null,
     risk_reward: results.riskReward ?? null,
-    notes: snap?.notes ?? '' // Free text field for trade notes
+    notes: snap?.notes ?? '', // Free text field for trade notes
+    status: snap?.status ?? 'open', // Trade status: open, trimmed, closed
+    trim_percent: snap?.trim_percent ?? 25, // Percentage to trim at 5R target (default 25%)
+    trim_price: snap?.trim_price ?? null, // Actual price when trimmed (for tracking)
+    trim_date: snap?.trim_date ?? null // Date when trimmed
   };
 }
 
@@ -576,6 +580,17 @@ function formatNumber(num) {
 
 
 function showSnapshotsModal(snapshots, onUpdate) {
+  // Count snapshots by status
+  const statusCounts = snapshots.reduce((acc, s) => {
+    const status = s.status || 'open';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const openCount = statusCounts.open || 0;
+  const trimmedCount = statusCounts.trimmed || 0;
+  const closedCount = statusCounts.closed || 0;
+
   // Create modal
   const modal = document.createElement('div');
   modal.className = 'snapshots-modal';
@@ -585,6 +600,12 @@ function showSnapshotsModal(snapshots, onUpdate) {
         <h3>Manage Snapshots (${snapshots.length})</h3>
         <button class="modal-close" aria-label="Close">×</button>
       </div>
+      <div class="snapshots-filter-bar">
+        <button class="filter-btn active" data-filter="all">All (${snapshots.length})</button>
+        <button class="filter-btn" data-filter="open">Open (${openCount})</button>
+        <button class="filter-btn" data-filter="trimmed">Trimmed (${trimmedCount})</button>
+        <button class="filter-btn" data-filter="closed">Closed (${closedCount})</button>
+      </div>
       <div class="snapshots-list">
         ${snapshots.map((snapshot, index) => createSnapshotCard(snapshot, index)).join('')}
       </div>
@@ -592,6 +613,30 @@ function showSnapshotsModal(snapshots, onUpdate) {
   `;
 
   document.body.appendChild(modal);
+
+  // Handle filter buttons
+  const filterButtons = modal.querySelectorAll('.filter-btn');
+  const snapshotCards = modal.querySelectorAll('.snapshot-card');
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filter = btn.getAttribute('data-filter');
+
+      // Update active state
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Filter cards
+      snapshotCards.forEach(card => {
+        const cardStatus = card.getAttribute('data-status') || 'open';
+        if (filter === 'all' || cardStatus === filter) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
 
   // Add event listeners
   modal.querySelector('.modal-close').addEventListener('click', () => {
@@ -607,20 +652,31 @@ function showSnapshotsModal(snapshots, onUpdate) {
   // Handle snapshot actions
   modal.addEventListener('click', (e) => {
     const target = e.target;
-    
+
     if (target.classList.contains('snapshot-edit')) {
       const index = parseInt(target.getAttribute('data-index'));
       editSnapshot(snapshots, index, onUpdate, modal);
     }
-    
+
     if (target.classList.contains('snapshot-delete')) {
       const index = parseInt(target.getAttribute('data-index'));
       deleteSnapshot(snapshots, index, onUpdate, modal);
     }
-    
+
     if (target.classList.contains('snapshot-copy')) {
       const index = parseInt(target.getAttribute('data-index'));
       copySnapshot(snapshots[index]);
+    }
+
+    if (target.classList.contains('snapshot-status-action')) {
+      const index = parseInt(target.getAttribute('data-index'));
+      const action = target.getAttribute('data-action');
+
+      if (action === 'trim') {
+        markAsTrimmed(snapshots, index, onUpdate, modal);
+      } else if (action === 'close') {
+        markAsClosed(snapshots, index, onUpdate, modal);
+      }
     }
   });
 }
@@ -633,13 +689,57 @@ function createSnapshotCard(snapshot, index) {
   const stop = formatNumber(snapshot.stop);
   const shares = formatNumber(snapshot.shares);
   const positionSize = formatNumber(snapshot.position_size);
+  const target5R = formatNumber(snapshot.target_5R);
   const notes = snapshot.notes ? snapshot.notes.substring(0, 50) + (snapshot.notes.length > 50 ? '...' : '') : 'No notes';
 
+  // Get status (default to 'open' for backward compatibility)
+  const status = snapshot.status || 'open';
+  const trimPercent = snapshot.trim_percent || 25;
+
+  // Status pill configuration
+  const statusConfig = {
+    open: { label: 'OPEN', class: 'status-open' },
+    trimmed: { label: 'TRIMMED', class: 'status-trimmed' },
+    closed: { label: 'CLOSED', class: 'status-closed' }
+  };
+
+  const statusInfo = statusConfig[status] || statusConfig.open;
+
+  // Calculate trim information if status is trimmed
+  let trimmedInfo = '';
+  if (status === 'trimmed') {
+    const originalShares = parseInt(snapshot.shares) || 0;
+    const sharesToTrim = Math.floor(originalShares * (trimPercent / 100));
+    const remainingShares = originalShares - sharesToTrim;
+    const entryPrice = parseFloat(snapshot.entry) || 0;
+    const fiveRTarget = parseFloat(snapshot.target_5R) || 0;
+    const profitPerShare = fiveRTarget - entryPrice;
+    const totalTrimProfit = sharesToTrim * profitPerShare;
+
+    trimmedInfo = `
+      <div class="snapshot-trimmed-info">
+        <div class="trim-detail"><span class="trim-icon">✅</span> Trimmed ${sharesToTrim} shares (${trimPercent}%) at $${formatNumber(fiveRTarget)}</div>
+        <div class="trim-detail"><span class="trim-icon">💰</span> Profit locked: $${formatNumber(totalTrimProfit)}</div>
+        <div class="trim-detail"><span class="trim-icon">📊</span> Remaining: <strong>${remainingShares} shares</strong></div>
+        <div class="trim-detail trim-exit-rule"><span class="trim-icon">⚠️</span> Exit: Close below 10 SMA</div>
+      </div>
+    `;
+  }
+
+  // Action buttons based on status
+  let actionButtons = '';
+  if (status === 'open') {
+    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="trim" title="Mark as trimmed at 5R">Mark as Trimmed at 5R</button>`;
+  } else if (status === 'trimmed') {
+    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="close" title="Mark as closed">Mark as Closed</button>`;
+  }
+
   return `
-    <div class="snapshot-card" data-index="${index}">
+    <div class="snapshot-card snapshot-status-${status}" data-index="${index}" data-status="${status}">
       <div class="snapshot-header">
         <div class="snapshot-info">
           <span class="snapshot-ticker">${ticker}</span>
+          <span class="status-pill ${statusInfo.class}">${statusInfo.label}</span>
           <span class="snapshot-date">${date} • ${time}</span>
         </div>
         <div class="snapshot-actions">
@@ -656,11 +756,17 @@ function createSnapshotCard(snapshot, index) {
           <span class="snapshot-value">$${stop}</span>
         </div>
         <div class="snapshot-row">
+          <span class="snapshot-label">5R Target:</span>
+          <span class="snapshot-value snapshot-5r-highlight">$${target5R}</span>
           <span class="snapshot-label">Shares:</span>
           <span class="snapshot-value">${shares}</span>
+        </div>
+        <div class="snapshot-row">
           <span class="snapshot-label">Position:</span>
           <span class="snapshot-value">$${positionSize}</span>
         </div>
+        ${trimmedInfo}
+        ${actionButtons ? `<div class="snapshot-action-row">${actionButtons}</div>` : ''}
         <div class="snapshot-notes">
           <span class="snapshot-label">Notes:</span>
           <span class="snapshot-value">${notes}</span>
@@ -700,6 +806,19 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
           <input type="number" id="edit-shares" value="${snapshot.shares || ''}" placeholder="Number of shares">
         </div>
         <div class="edit-group">
+          <label>Status:</label>
+          <select id="edit-status">
+            <option value="open" ${(snapshot.status || 'open') === 'open' ? 'selected' : ''}>Open</option>
+            <option value="trimmed" ${snapshot.status === 'trimmed' ? 'selected' : ''}>Trimmed</option>
+            <option value="closed" ${snapshot.status === 'closed' ? 'selected' : ''}>Closed</option>
+          </select>
+        </div>
+        <div class="edit-group">
+          <label>Trim Percentage (%):</label>
+          <input type="number" id="edit-trim-percent" value="${snapshot.trim_percent || 25}" min="1" max="100" step="1" placeholder="25">
+          <span class="input-hint">Used when status is "Trimmed"</span>
+        </div>
+        <div class="edit-group">
           <label>Notes:</label>
           <textarea id="edit-notes" placeholder="Trade notes...">${snapshot.notes || ''}</textarea>
         </div>
@@ -728,6 +847,8 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
     const stop = parseFloat(editModal.querySelector('#edit-stop').value) || null;
     const shares = parseInt(editModal.querySelector('#edit-shares').value) || null;
     const notes = editModal.querySelector('#edit-notes').value.trim();
+    const status = editModal.querySelector('#edit-status').value;
+    const trimPercent = parseFloat(editModal.querySelector('#edit-trim-percent').value) || 25;
 
     // Recalculate dependent values
     const updatedSnapshot = recalculateSnapshotValues({
@@ -736,19 +857,21 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
       entry,
       stop,
       shares,
-      notes
+      notes,
+      status,
+      trim_percent: trimPercent
     });
 
     // Update the snapshot
     snapshots[index] = updatedSnapshot;
     onUpdate(snapshots);
-    
+
     // Update the modal display
     const snapshotCard = modal.querySelector(`[data-index="${index}"]`);
     if (snapshotCard) {
       snapshotCard.outerHTML = createSnapshotCard(updatedSnapshot, index);
     }
-    
+
     editModal.remove();
     toast('✅ Snapshot updated with recalculated values');
   });
@@ -870,4 +993,120 @@ function copySnapshot(snapshot) {
   }).catch(() => {
     toast('❌ Failed to copy snapshot');
   });
+}
+
+function markAsTrimmed(snapshots, index, onUpdate, modal) {
+  const snapshot = snapshots[index];
+  const ticker = snapshot.ticker || 'this trade';
+
+  // Create a modal to configure trim percentage
+  const trimModal = document.createElement('div');
+  trimModal.className = 'edit-modal';
+  trimModal.innerHTML = `
+    <div class="edit-modal-content">
+      <div class="edit-modal-header">
+        <h3>Mark ${ticker} as Trimmed at 5R</h3>
+        <button class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="edit-form">
+        <div class="trim-summary">
+          <p><strong>5R Target:</strong> $${formatNumber(snapshot.target_5R)}</p>
+          <p><strong>Total Shares:</strong> ${formatNumber(snapshot.shares)}</p>
+        </div>
+        <div class="edit-group">
+          <label>Trim Percentage (%):</label>
+          <input type="number" id="trim-percentage" value="${snapshot.trim_percent || 25}" min="1" max="100" step="1">
+          <span class="input-hint">Default: 25% (sell 1/4 of position)</span>
+        </div>
+        <div id="trim-preview" class="trim-preview"></div>
+        <div class="edit-actions">
+          <button class="btn-secondary" id="cancel-trim">Cancel</button>
+          <button class="btn-primary" id="confirm-trim">Confirm Trim</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(trimModal);
+
+  // Update preview when percentage changes
+  const percentInput = trimModal.querySelector('#trim-percentage');
+  const preview = trimModal.querySelector('#trim-preview');
+
+  const updatePreview = () => {
+    const trimPercent = parseFloat(percentInput.value) || 25;
+    const originalShares = parseInt(snapshot.shares) || 0;
+    const sharesToTrim = Math.floor(originalShares * (trimPercent / 100));
+    const remainingShares = originalShares - sharesToTrim;
+    const entryPrice = parseFloat(snapshot.entry) || 0;
+    const fiveRTarget = parseFloat(snapshot.target_5R) || 0;
+    const profitPerShare = fiveRTarget - entryPrice;
+    const totalTrimProfit = sharesToTrim * profitPerShare;
+
+    preview.innerHTML = `
+      <h4>Preview:</h4>
+      <p><strong>Trimming:</strong> ${sharesToTrim} shares (${trimPercent}%)</p>
+      <p><strong>Profit Locked:</strong> $${formatNumber(totalTrimProfit)}</p>
+      <p><strong>Remaining:</strong> ${remainingShares} shares</p>
+    `;
+  };
+
+  percentInput.addEventListener('input', updatePreview);
+  updatePreview(); // Initial preview
+
+  // Handle modal events
+  trimModal.querySelector('.modal-close').addEventListener('click', () => trimModal.remove());
+  trimModal.querySelector('#cancel-trim').addEventListener('click', () => trimModal.remove());
+
+  trimModal.addEventListener('click', (e) => {
+    if (e.target === trimModal) trimModal.remove();
+  });
+
+  trimModal.querySelector('#confirm-trim').addEventListener('click', () => {
+    const trimPercent = parseFloat(percentInput.value) || 25;
+
+    // Update snapshot status
+    snapshots[index] = {
+      ...snapshot,
+      status: 'trimmed',
+      trim_percent: trimPercent,
+      trim_price: snapshot.target_5R,
+      trim_date: new Date().toISOString()
+    };
+
+    onUpdate(snapshots);
+
+    // Update the card in the modal
+    const snapshotCard = modal.querySelector(`[data-index="${index}"]`);
+    if (snapshotCard) {
+      snapshotCard.outerHTML = createSnapshotCard(snapshots[index], index);
+    }
+
+    trimModal.remove();
+    toast(`✅ ${ticker} marked as trimmed (${trimPercent}%)`);
+  });
+}
+
+function markAsClosed(snapshots, index, onUpdate, modal) {
+  const snapshot = snapshots[index];
+  const ticker = snapshot.ticker || 'this trade';
+
+  if (confirm(`Mark ${ticker} as closed?\n\nThis will mark the position as fully exited.`)) {
+    // Update snapshot status
+    snapshots[index] = {
+      ...snapshot,
+      status: 'closed',
+      close_date: new Date().toISOString()
+    };
+
+    onUpdate(snapshots);
+
+    // Update the card in the modal
+    const snapshotCard = modal.querySelector(`[data-index="${index}"]`);
+    if (snapshotCard) {
+      snapshotCard.outerHTML = createSnapshotCard(snapshots[index], index);
+    }
+
+    toast(`✅ ${ticker} marked as closed`);
+  }
 }
