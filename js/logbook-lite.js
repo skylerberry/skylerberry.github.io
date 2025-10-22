@@ -738,8 +738,10 @@ function createSnapshotCard(snapshot, index) {
     <div class="snapshot-card snapshot-status-${status}" data-index="${index}" data-status="${status}">
       <div class="snapshot-header">
         <div class="snapshot-info">
-          <span class="snapshot-ticker">${ticker}</span>
-          <span class="status-pill ${statusInfo.class}">${statusInfo.label}</span>
+          <div class="snapshot-ticker-row">
+            <span class="snapshot-ticker">${ticker}</span>
+            <span class="status-pill ${statusInfo.class}">${statusInfo.label}</span>
+          </div>
           <span class="snapshot-date">${date} • ${time}</span>
         </div>
         <div class="snapshot-actions">
