@@ -86,8 +86,8 @@ function flattenSnapshot(snap) {
     notes: snap?.notes ?? '', // Free text field for trade notes
     status: snap?.status ?? 'open', // Trade status: open, trimmed, closed
     trim_percent: snap?.trim_percent ?? 25, // Percentage to trim at 5R target (default 25%)
-    trim_price: snap?.trim_price ?? null, // Actual price when trimmed (for tracking)
-    trim_date: snap?.trim_date ?? null // Date when trimmed
+    trims: snap?.trims ?? [], // Array of trim objects: { date, price, shares, profit }
+    remaining_shares: snap?.remaining_shares ?? (results.shares || null) // Track remaining shares after trims
   };
 }
 
@@ -110,17 +110,17 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   logbookBar.className = 'logbook-bar';
   logbookBar.innerHTML = `
     <div class="log-left">
-      <button class="logbook-btn primary" id="saveSnapshotBtn">🧾 Save Snapshot</button>
-      <button class="logbook-btn" id="cancelPendingBtn" style="display: none;">❌ Cancel Pending</button>
-      <span id="logCount" class="log-count">0 snapshots</span>
+      <button class="logbook-btn primary" id="saveSnapshotBtn">📝 Add to Journal</button>
+      <button class="logbook-btn" id="cancelPendingBtn" style="display: none;">❌ Cancel</button>
+      <span id="logCount" class="log-count">0 trades</span>
     </div>
     <div class="log-actions">
-      <button class="logbook-btn" id="viewSnapshots" title="View and manage snapshots">📋 View Snapshots</button>
-      <button class="logbook-btn" id="copyLast" title="Copy last row as TSV (great for Notion)">Copy Last</button>
-      <button class="logbook-btn" id="copyAllCSV" title="Copy all rows as CSV">Copy All</button>
-      <button class="logbook-btn" id="downloadCSV" title="Download as CSV file">Download</button>
-      <button class="logbook-btn" id="exportPDF" title="Export professional PDF report">📄 PDF</button>
-      <button class="logbook-btn danger" id="clearLog" title="Delete all snapshots">🗑️ Delete All</button>
+      <button class="logbook-btn" id="viewSnapshots" title="View and manage trade journal">📖 Open Journal</button>
+      <button class="logbook-btn" id="copyLast" title="Copy last trade as TSV">Copy Last</button>
+      <button class="logbook-btn" id="copyAllCSV" title="Copy all trades as CSV">Copy All</button>
+      <button class="logbook-btn" id="downloadCSV" title="Download journal as CSV">Download</button>
+      <button class="logbook-btn" id="exportPDF" title="Export journal as PDF">📄 PDF</button>
+      <button class="logbook-btn danger" id="clearLog" title="Delete all journal entries">🗑️ Delete All</button>
     </div>
   `;
 
@@ -143,9 +143,9 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   let rows = loadRows();
   const countEl = logbookBar.querySelector('#logCount');
   
-  const updateCount = () => { 
+  const updateCount = () => {
     const count = rows.length;
-    countEl.textContent = `${count} snapshot${count === 1 ? '' : 's'}`;
+    countEl.textContent = `${count} trade${count === 1 ? '' : 's'}`;
   };
   
   updateCount();
@@ -175,7 +175,7 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
     // Get notes from textarea
     const notesTextarea = document.getElementById('tradeNotes');
     const notes = notesTextarea ? notesTextarea.value.trim() : '';
-    
+
     // Add notes to snapshot
     const snapshotWithNotes = {
       ...snapshotToSave,
@@ -186,39 +186,39 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
     rows.push(flatRow);
     saveRows(rows);
     updateCount();
-    
+
     // Clear notes and pending snapshot after saving
     if (notesTextarea) {
       notesTextarea.value = '';
     }
     pendingSnapshot = null;
-    
+
     // Update button text back to normal
     const saveBtn = logbookBar.querySelector('#saveSnapshotBtn');
-    saveBtn.textContent = '🧾 Save Snapshot';
+    saveBtn.textContent = '📝 Add to Journal';
     logbookBar.querySelector('#cancelPendingBtn').style.display = 'none'; // Hide cancel button
-    
+
     // Show different feedback based on whether notes were added
     if (notes && notes.trim()) {
-      toast('📋 Snapshot saved with notes!');
+      toast('✅ Trade added to journal with notes!');
     } else {
-      toast('📋 Snapshot saved!');
+      toast('✅ Trade added to journal!');
     }
-    
-    console.log('💾 Manual snapshot saved:', flatRow);
+
+    console.log('💾 Trade saved to journal:', flatRow);
   });
 
   // Copy last row as TSV (perfect for pasting into Notion tables)
   logbookBar.querySelector('#copyLast').addEventListener('click', async () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots yet');
+      toast('⚠️ No trades in journal yet');
       return;
     }
 
     try {
       const tsv = toTSV([rows[rows.length - 1]]);
       await navigator.clipboard?.writeText(tsv);
-      toast('📋 Last snapshot copied (TSV)');
+      toast('📋 Last trade copied (TSV)');
     } catch (error) {
       toast('❌ Failed to copy to clipboard');
     }
@@ -227,14 +227,14 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   // Copy all as CSV
   logbookBar.querySelector('#copyAllCSV').addEventListener('click', async () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots yet');
+      toast('⚠️ No trades in journal yet');
       return;
     }
 
     try {
       const csv = toCSV(rows);
       await navigator.clipboard?.writeText(csv);
-      toast(`📋 ${rows.length} snapshots copied (CSV)`);
+      toast(`📋 ${rows.length} trade${rows.length === 1 ? '' : 's'} copied (CSV)`);
     } catch (error) {
       toast('❌ Failed to copy to clipboard');
     }
@@ -243,56 +243,56 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   // Download CSV file
   logbookBar.querySelector('#downloadCSV').addEventListener('click', () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots yet');
+      toast('⚠️ No trades in journal yet');
       return;
     }
 
     const csv = toCSV(rows);
     const date = new Date().toISOString().slice(0, 10);
-    download(`trade_log_${date}.csv`, csv);
-    toast(`📥 Downloaded ${rows.length} snapshots`);
+    download(`trade_journal_${date}.csv`, csv);
+    toast(`📥 Downloaded ${rows.length} trade${rows.length === 1 ? '' : 's'}`);
   });
 
   // Export PDF report
   logbookBar.querySelector('#exportPDF').addEventListener('click', () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots yet');
+      toast('⚠️ No trades in journal yet');
       return;
     }
 
     generatePDFReport(rows);
   });
 
-  // View and manage snapshots
+  // View and manage journal
   logbookBar.querySelector('#viewSnapshots').addEventListener('click', () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots to view');
+      toast('⚠️ No trades in journal yet');
       return;
     }
-    showSnapshotsModal(rows, (newRows) => {
+    showJournalModal(rows, (newRows) => {
       rows = newRows;
       saveRows(rows);
       updateCount();
     });
   });
 
-  // Clear all snapshots
+  // Clear all journal entries
   logbookBar.querySelector('#clearLog').addEventListener('click', () => {
     if (!rows.length) {
-      toast('⚠️ No snapshots to delete');
+      toast('⚠️ No trades to delete');
       return;
     }
 
     // Show confirmation dialog
     const count = rows.length;
-    const confirmed = confirm(`Are you sure you want to delete all ${count} snapshots?\n\nThis action cannot be undone.`);
-    
+    const confirmed = confirm(`Are you sure you want to delete all ${count} trade${count === 1 ? '' : 's'} from your journal?\n\nThis action cannot be undone.`);
+
     if (confirmed) {
       rows = [];
       saveRows(rows);
       updateCount();
-      toast(`🗑️ Deleted ${count} snapshots`);
-      console.log(`🗑️ Deleted ${count} snapshots`);
+      toast(`🗑️ Deleted ${count} trade${count === 1 ? '' : 's'}`);
+      console.log(`🗑️ Deleted ${count} trades`);
     } else {
       console.log('🗑️ Delete cancelled by user');
     }
@@ -311,11 +311,11 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
         // Create a pending snapshot instead of auto-saving
         pendingSnapshot = latestSnapshot;
         
-        // Update the save button to indicate there's a pending snapshot
+        // Update the save button to indicate there's a pending trade
         const saveBtn = logbookBar.querySelector('#saveSnapshotBtn');
         saveBtn.textContent = '📋 Save Imported Trade';
         logbookBar.querySelector('#cancelPendingBtn').style.display = 'block'; // Show cancel button
-        
+
         // Pre-fill notes with a template for imported trades
         const notesTextarea = document.getElementById('tradeNotes');
         if (notesTextarea && !notesTextarea.value.trim()) {
@@ -323,7 +323,7 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
           notesTextarea.value = `Imported Alert: ${ticker}\nSetup: [Add your analysis here]\nPlan: [Add your trade plan here]`;
           notesTextarea.focus();
         }
-        
+
         toast('📋 Imported trade ready to save! Add your notes and click "Save Imported Trade"');
         
         console.log('📋 Pending snapshot created from imported alert:', latestSnapshot);
@@ -335,20 +335,20 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   logbookBar.querySelector('#cancelPendingBtn').addEventListener('click', () => {
     pendingSnapshot = null;
     const saveBtn = logbookBar.querySelector('#saveSnapshotBtn');
-    saveBtn.textContent = '🧾 Save Snapshot';
+    saveBtn.textContent = '📝 Add to Journal';
     logbookBar.querySelector('#cancelPendingBtn').style.display = 'none'; // Hide cancel button
-    
+
     // Clear notes
     const notesTextarea = document.getElementById('tradeNotes');
     if (notesTextarea) {
       notesTextarea.value = '';
     }
-    
-    toast('📋 Pending snapshot cancelled.');
-    console.log('📋 Pending snapshot cancelled.');
+
+    toast('📋 Pending trade cancelled.');
+    console.log('📋 Pending trade cancelled.');
   });
 
-  console.log('✅ LogbookLite initialized with', rows.length, 'existing snapshots');
+  console.log('✅ Trade Journal initialized with', rows.length, 'existing trades');
 }
 
 // PDF Report Generation
@@ -579,8 +579,8 @@ function formatNumber(num) {
 
 
 
-function showSnapshotsModal(snapshots, onUpdate) {
-  // Count snapshots by status
+function showJournalModal(snapshots, onUpdate) {
+  // Count trades by status
   const statusCounts = snapshots.reduce((acc, s) => {
     const status = s.status || 'open';
     acc[status] = (acc[status] || 0) + 1;
@@ -597,7 +597,7 @@ function showSnapshotsModal(snapshots, onUpdate) {
   modal.innerHTML = `
     <div class="snapshots-modal-content">
       <div class="snapshots-modal-header">
-        <h3>Manage Snapshots (${snapshots.length})</h3>
+        <h3>📖 Trade Journal (${snapshots.length} ${snapshots.length === 1 ? 'trade' : 'trades'})</h3>
         <button class="modal-close" aria-label="Close">×</button>
       </div>
       <div class="snapshots-filter-bar">
@@ -673,9 +673,7 @@ function showSnapshotsModal(snapshots, onUpdate) {
       const action = target.getAttribute('data-action');
 
       if (action === 'trim') {
-        markAsTrimmed(snapshots, index, onUpdate, modal);
-      } else if (action === 'close') {
-        markAsClosed(snapshots, index, onUpdate, modal);
+        addTrimToSnapshot(snapshots, index, onUpdate, modal);
       }
     }
   });
@@ -695,6 +693,9 @@ function createSnapshotCard(snapshot, index) {
   // Get status (default to 'open' for backward compatibility)
   const status = snapshot.status || 'open';
   const trimPercent = snapshot.trim_percent || 25;
+  const trims = snapshot.trims || [];
+  const originalShares = parseInt(snapshot.shares) || 0;
+  const remainingShares = parseInt(snapshot.remaining_shares ?? snapshot.shares) || 0;
 
   // Status pill configuration
   const statusConfig = {
@@ -705,23 +706,28 @@ function createSnapshotCard(snapshot, index) {
 
   const statusInfo = statusConfig[status] || statusConfig.open;
 
-  // Calculate trim information if status is trimmed
+  // Calculate trim information if there are trims
   let trimmedInfo = '';
-  if (status === 'trimmed') {
-    const originalShares = parseInt(snapshot.shares) || 0;
-    const sharesToTrim = Math.floor(originalShares * (trimPercent / 100));
-    const remainingShares = originalShares - sharesToTrim;
-    const entryPrice = parseFloat(snapshot.entry) || 0;
-    const fiveRTarget = parseFloat(snapshot.target_5R) || 0;
-    const profitPerShare = fiveRTarget - entryPrice;
-    const totalTrimProfit = sharesToTrim * profitPerShare;
+  if (trims.length > 0) {
+    const totalProfit = trims.reduce((sum, trim) => sum + (parseFloat(trim.profit) || 0), 0);
+    const totalSharesSold = trims.reduce((sum, trim) => sum + (parseInt(trim.shares) || 0), 0);
+
+    // Build trim history
+    const trimHistory = trims.map((trim, idx) => {
+      const trimDate = new Date(trim.date).toLocaleDateString();
+      return `<div class="trim-detail"><span class="trim-icon">✅</span> Trim ${idx + 1}: ${trim.shares} shares @ $${formatNumber(trim.price)} on ${trimDate} = $${formatNumber(trim.profit)} profit</div>`;
+    }).join('');
 
     trimmedInfo = `
       <div class="snapshot-trimmed-info">
-        <div class="trim-detail"><span class="trim-icon">✅</span> Trimmed ${sharesToTrim} shares (${trimPercent}%) at $${formatNumber(fiveRTarget)}</div>
-        <div class="trim-detail"><span class="trim-icon">💰</span> Profit locked: $${formatNumber(totalTrimProfit)}</div>
-        <div class="trim-detail"><span class="trim-icon">📊</span> Remaining: <strong>${remainingShares} shares</strong></div>
-        <div class="trim-detail trim-exit-rule"><span class="trim-icon">⚠️</span> Exit: Close below 10 SMA</div>
+        <div class="trim-summary-header">
+          <strong>${trims.length} trim${trims.length > 1 ? 's' : ''}</strong> • Total P&L: <strong>$${formatNumber(totalProfit)}</strong>
+        </div>
+        ${trimHistory}
+        ${status === 'trimmed' ? `
+          <div class="trim-detail"><span class="trim-icon">📊</span> Remaining: <strong>${remainingShares} shares</strong></div>
+          <div class="trim-detail trim-exit-rule"><span class="trim-icon">⚠️</span> Exit: Close below 10 SMA or continue scaling</div>
+        ` : ''}
       </div>
     `;
   }
@@ -729,9 +735,9 @@ function createSnapshotCard(snapshot, index) {
   // Action buttons based on status
   let actionButtons = '';
   if (status === 'open') {
-    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="trim" title="Mark as trimmed at 5R">Mark as Trimmed at 5R</button>`;
+    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="trim" title="Trim position">Trim Position (5R Default)</button>`;
   } else if (status === 'trimmed') {
-    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="close" title="Mark as closed">Mark as Closed</button>`;
+    actionButtons = `<button class="snapshot-status-action" data-index="${index}" data-action="trim" title="Add another trim">Add Another Trim</button>`;
   }
 
   return `
@@ -875,7 +881,7 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
     }
 
     editModal.remove();
-    toast('✅ Snapshot updated with recalculated values');
+    toast('✅ Trade updated with recalculated values');
   });
 }
 
@@ -911,7 +917,7 @@ function deleteSnapshot(snapshots, index, onUpdate, modal) {
         
         // Update modal header count
         const header = modal.querySelector('.snapshots-modal-header h3');
-        header.textContent = `Manage Snapshots (${snapshots.length})`;
+        header.textContent = `📖 Trade Journal (${snapshots.length} ${snapshots.length === 1 ? 'trade' : 'trades'})`;
         
         toast(`🗑️ Deleted ${ticker}`);
       }, 300); // Wait for animation to complete
@@ -991,34 +997,62 @@ function recalculateSnapshotValues(snapshot) {
 function copySnapshot(snapshot) {
   const tsv = toTSV([snapshot]);
   navigator.clipboard?.writeText(tsv).then(() => {
-    toast('📋 Snapshot copied to clipboard');
+    toast('📋 Trade copied to clipboard');
   }).catch(() => {
-    toast('❌ Failed to copy snapshot');
+    toast('❌ Failed to copy trade');
   });
 }
 
-function markAsTrimmed(snapshots, index, onUpdate, modal) {
+function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
   const snapshot = snapshots[index];
   const ticker = snapshot.ticker || 'this trade';
+  const status = snapshot.status || 'open';
+  const trims = snapshot.trims || [];
+  const remainingShares = parseInt(snapshot.remaining_shares ?? snapshot.shares) || 0;
+  const entryPrice = parseFloat(snapshot.entry) || 0;
+  const fiveRTarget = parseFloat(snapshot.target_5R) || 0;
 
-  // Create a modal to configure trim percentage
+  // Determine default price (5R for first trim, empty for subsequent)
+  const isFirstTrim = trims.length === 0;
+  const defaultPrice = isFirstTrim ? fiveRTarget : '';
+
+  // Calculate default shares (25% of remaining for first trim, all remaining for subsequent)
+  const defaultShares = isFirstTrim
+    ? Math.floor(remainingShares * 0.25)
+    : remainingShares;
+
+  // Today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+
+  // Create trim modal
   const trimModal = document.createElement('div');
   trimModal.className = 'edit-modal';
   trimModal.innerHTML = `
     <div class="edit-modal-content">
       <div class="edit-modal-header">
-        <h3>Mark ${ticker} as Trimmed at 5R</h3>
+        <h3>${isFirstTrim ? 'Trim Position' : 'Add Another Trim'} - ${ticker}</h3>
         <button class="modal-close" aria-label="Close">×</button>
       </div>
       <div class="edit-form">
         <div class="trim-summary">
-          <p><strong>5R Target:</strong> $${formatNumber(snapshot.target_5R)}</p>
-          <p><strong>Total Shares:</strong> ${formatNumber(snapshot.shares)}</p>
+          <p><strong>Entry Price:</strong> $${formatNumber(entryPrice)}</p>
+          <p><strong>5R Target:</strong> $${formatNumber(fiveRTarget)}</p>
+          <p><strong>Remaining Shares:</strong> ${remainingShares}</p>
+          ${trims.length > 0 ? `<p><strong>Previous Trims:</strong> ${trims.length}</p>` : ''}
         </div>
         <div class="edit-group">
-          <label>Trim Percentage (%):</label>
-          <input type="number" id="trim-percentage" value="${snapshot.trim_percent || 25}" min="1" max="100" step="1">
-          <span class="input-hint">Default: 25% (sell 1/4 of position)</span>
+          <label>Exit Price:</label>
+          <input type="number" id="trim-price" value="${defaultPrice}" step="0.01" placeholder="Exit price" required>
+          <span class="input-hint">${isFirstTrim ? 'Default: 5R target price' : 'Enter your exit price'}</span>
+        </div>
+        <div class="edit-group">
+          <label>Shares to Sell:</label>
+          <input type="number" id="trim-shares" value="${defaultShares}" min="1" max="${remainingShares}" step="1" required>
+          <span class="input-hint">Max: ${remainingShares} shares remaining</span>
+        </div>
+        <div class="edit-group">
+          <label>Exit Date:</label>
+          <input type="date" id="trim-date" value="${today}" required>
         </div>
         <div id="trim-preview" class="trim-preview"></div>
         <div class="edit-actions">
@@ -1031,29 +1065,59 @@ function markAsTrimmed(snapshots, index, onUpdate, modal) {
 
   document.body.appendChild(trimModal);
 
-  // Update preview when percentage changes
-  const percentInput = trimModal.querySelector('#trim-percentage');
+  // Get inputs
+  const priceInput = trimModal.querySelector('#trim-price');
+  const sharesInput = trimModal.querySelector('#trim-shares');
+  const dateInput = trimModal.querySelector('#trim-date');
   const preview = trimModal.querySelector('#trim-preview');
+  const confirmBtn = trimModal.querySelector('#confirm-trim');
 
+  // Update preview
   const updatePreview = () => {
-    const trimPercent = parseFloat(percentInput.value) || 25;
-    const originalShares = parseInt(snapshot.shares) || 0;
-    const sharesToTrim = Math.floor(originalShares * (trimPercent / 100));
-    const remainingShares = originalShares - sharesToTrim;
-    const entryPrice = parseFloat(snapshot.entry) || 0;
-    const fiveRTarget = parseFloat(snapshot.target_5R) || 0;
-    const profitPerShare = fiveRTarget - entryPrice;
-    const totalTrimProfit = sharesToTrim * profitPerShare;
+    const price = parseFloat(priceInput.value) || 0;
+    const shares = parseInt(sharesInput.value) || 0;
+    const profitPerShare = price - entryPrice;
+    const totalProfit = shares * profitPerShare;
+    const newRemainingShares = remainingShares - shares;
+
+    // Validation
+    if (shares > remainingShares) {
+      preview.innerHTML = `
+        <div style="color: #dc2626;">
+          <h4>Error:</h4>
+          <p>Cannot sell more than ${remainingShares} remaining shares!</p>
+        </div>
+      `;
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    if (shares <= 0 || price <= 0) {
+      preview.innerHTML = `
+        <div style="color: #dc2626;">
+          <h4>Error:</h4>
+          <p>Price and shares must be greater than 0</p>
+        </div>
+      `;
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    confirmBtn.disabled = false;
+
+    const willClose = newRemainingShares === 0;
 
     preview.innerHTML = `
       <h4>Preview:</h4>
-      <p><strong>Trimming:</strong> ${sharesToTrim} shares (${trimPercent}%)</p>
-      <p><strong>Profit Locked:</strong> $${formatNumber(totalTrimProfit)}</p>
-      <p><strong>Remaining:</strong> ${remainingShares} shares</p>
+      <p><strong>Selling:</strong> ${shares} shares @ $${formatNumber(price)}</p>
+      <p><strong>Profit/Loss:</strong> $${formatNumber(totalProfit)} (${profitPerShare >= 0 ? '+' : ''}$${formatNumber(profitPerShare)}/share)</p>
+      <p><strong>After Trim:</strong> ${newRemainingShares} shares remaining</p>
+      ${willClose ? '<p style="color: #10b981;"><strong>✅ This will close the position</strong></p>' : '<p><strong>Status:</strong> Position remains open for more trims</p>'}
     `;
   };
 
-  percentInput.addEventListener('input', updatePreview);
+  priceInput.addEventListener('input', updatePreview);
+  sharesInput.addEventListener('input', updatePreview);
   updatePreview(); // Initial preview
 
   // Handle modal events
@@ -1064,16 +1128,39 @@ function markAsTrimmed(snapshots, index, onUpdate, modal) {
     if (e.target === trimModal) trimModal.remove();
   });
 
-  trimModal.querySelector('#confirm-trim').addEventListener('click', () => {
-    const trimPercent = parseFloat(percentInput.value) || 25;
+  confirmBtn.addEventListener('click', () => {
+    const price = parseFloat(priceInput.value) || 0;
+    const shares = parseInt(sharesInput.value) || 0;
+    const date = dateInput.value;
 
-    // Update snapshot status
+    if (shares > remainingShares || shares <= 0 || price <= 0) {
+      toast('❌ Invalid trim values');
+      return;
+    }
+
+    // Calculate profit for this trim
+    const profitPerShare = price - entryPrice;
+    const profit = shares * profitPerShare;
+
+    // Create new trim object
+    const newTrim = {
+      date: date,
+      price: price,
+      shares: shares,
+      profit: profit
+    };
+
+    // Update snapshot
+    const newTrims = [...trims, newTrim];
+    const newRemainingShares = remainingShares - shares;
+    const willClose = newRemainingShares === 0;
+
     snapshots[index] = {
       ...snapshot,
-      status: 'trimmed',
-      trim_percent: trimPercent,
-      trim_price: snapshot.target_5R,
-      trim_date: new Date().toISOString()
+      status: willClose ? 'closed' : 'trimmed',
+      trims: newTrims,
+      remaining_shares: newRemainingShares,
+      close_date: willClose ? new Date().toISOString() : snapshot.close_date
     };
 
     onUpdate(snapshots);
@@ -1085,30 +1172,12 @@ function markAsTrimmed(snapshots, index, onUpdate, modal) {
     }
 
     trimModal.remove();
-    toast(`✅ ${ticker} marked as trimmed (${trimPercent}%)`);
-  });
-}
 
-function markAsClosed(snapshots, index, onUpdate, modal) {
-  const snapshot = snapshots[index];
-  const ticker = snapshot.ticker || 'this trade';
-
-  if (confirm(`Mark ${ticker} as closed?\n\nThis will mark the position as fully exited.`)) {
-    // Update snapshot status
-    snapshots[index] = {
-      ...snapshot,
-      status: 'closed',
-      close_date: new Date().toISOString()
-    };
-
-    onUpdate(snapshots);
-
-    // Update the card in the modal
-    const snapshotCard = modal.querySelector(`[data-index="${index}"]`);
-    if (snapshotCard) {
-      snapshotCard.outerHTML = createSnapshotCard(snapshots[index], index);
+    if (willClose) {
+      const totalProfit = newTrims.reduce((sum, t) => sum + t.profit, 0);
+      toast(`✅ ${ticker} position closed! Total P&L: $${formatNumber(totalProfit)}`);
+    } else {
+      toast(`✅ Trim added to ${ticker} (${newRemainingShares} shares remaining)`);
     }
-
-    toast(`✅ ${ticker} marked as closed`);
-  }
+  });
 }
