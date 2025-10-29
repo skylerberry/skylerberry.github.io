@@ -132,9 +132,9 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   notesSection.innerHTML = `
     <div class="notes-header">
       <label for="tradeNotes" class="notes-label">📝 Trade Notes (optional)</label>
-      <span class="notes-hint">Add your trade rationale, setup analysis, or any observations</span>
+      <span class="notes-hint">Track your emotions, thoughts, and what you learned</span>
     </div>
-    <textarea id="tradeNotes" class="notes-textarea" placeholder="Enter your trade notes here... (e.g., Setup: Qullamaggie-style breakout - 4H bull flag, strong volume, key resistance at $150. Plan: Scale in 50% at entry, 50% on pullback to $145)"></textarea>
+    <textarea id="tradeNotes" class="notes-textarea" placeholder="How did you feel entering this trade? Were you confident or hesitant? What was your reasoning? Did you stick to your plan?"></textarea>
   `;
   
   logbookBar.insertAdjacentElement('afterend', notesSection);
