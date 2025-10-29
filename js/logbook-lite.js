@@ -1158,7 +1158,7 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
       <p><strong>Selling:</strong> ${shares} shares @ $${formatNumber(price)}</p>
       <p><strong>Profit/Loss:</strong> $${formatNumber(totalProfit)} (${profitPerShare >= 0 ? '+' : ''}$${formatNumber(profitPerShare)}/share)</p>
       <p><strong>After Trim:</strong> ${newRemainingShares} shares remaining</p>
-      ${willClose ? '<p style="color: #10b981;"><strong>✅ This will close the position</strong></p>' : '<p><strong>Status:</strong> Position remains open for more trims</p>'}
+      <p><strong>Status:</strong> ${willClose ? '✅ This will close the position' : 'Position remains open for more trims'}</p>
     `;
   };
 
