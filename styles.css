@@ -395,6 +395,14 @@ body {
     border-radius: 6px;
 }
 
+.trim-summary-header {
+    font-size: 14px;
+    color: #78350f;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #fbbf24;
+}
+
 .trim-detail {
     display: flex;
     align-items: center;
@@ -669,6 +677,11 @@ body {
 [data-theme="dark"] .snapshot-trimmed-info {
     background: #78350f;
     border-color: #92400e;
+}
+
+[data-theme="dark"] .trim-summary-header {
+    color: #fef3c7;
+    border-bottom-color: #92400e;
 }
 
 [data-theme="dark"] .trim-detail {
@@ -2558,6 +2571,11 @@ body.steel-mode .snapshot-action-row {
 body.steel-mode .snapshot-trimmed-info {
     background: #78350f;
     border-color: #92400e;
+}
+
+body.steel-mode .trim-summary-header {
+    color: #fef3c7;
+    border-bottom-color: #92400e;
 }
 
 body.steel-mode .trim-detail {
