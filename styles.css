@@ -455,16 +455,29 @@ body {
     border-radius: 6px;
 }
 
+.trim-preview.error {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+
 .trim-preview h4 {
     margin: 0 0 8px 0;
     font-size: 14px;
     color: #065f46;
 }
 
+.trim-preview.error h4 {
+    color: #dc2626;
+}
+
 .trim-preview p {
     margin: 4px 0;
     font-size: 13px;
     color: #047857;
+}
+
+.trim-preview.error p {
+    color: #dc2626;
 }
 
 .input-hint {
@@ -705,12 +718,25 @@ body {
     border-color: #065f46;
 }
 
+[data-theme="dark"] .trim-preview.error {
+    background: #7f1d1d;
+    border-color: #dc2626;
+}
+
 [data-theme="dark"] .trim-preview h4 {
     color: #d1fae5;
 }
 
+[data-theme="dark"] .trim-preview.error h4 {
+    color: #fca5a5;
+}
+
 [data-theme="dark"] .trim-preview p {
     color: #a7f3d0;
+}
+
+[data-theme="dark"] .trim-preview.error p {
+    color: #fca5a5;
 }
 
 [data-theme="dark"] .input-hint {
@@ -2599,12 +2625,25 @@ body.steel-mode .trim-preview {
     border-color: #065f46;
 }
 
+body.steel-mode .trim-preview.error {
+    background: #7f1d1d;
+    border-color: #dc2626;
+}
+
 body.steel-mode .trim-preview h4 {
     color: #d1fae5;
 }
 
+body.steel-mode .trim-preview.error h4 {
+    color: #fca5a5;
+}
+
 body.steel-mode .trim-preview p {
     color: #a7f3d0;
+}
+
+body.steel-mode .trim-preview.error p {
+    color: #fca5a5;
 }
 
 body.steel-mode .input-hint {
