@@ -2103,6 +2103,194 @@ body.dark-mode .trim-percent-btn.active {
     border-color: #1CA1F2;
 }
 
+/* Dark mode journal/snapshots modal */
+body.dark-mode .snapshots-modal-content,
+body.dark-mode .edit-modal-content {
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+body.dark-mode .snapshots-modal-header,
+body.dark-mode .edit-modal-header {
+    background: #374151;
+    border-bottom-color: #4b5563;
+}
+
+body.dark-mode .snapshots-modal-header h3,
+body.dark-mode .edit-modal-header h3 {
+    color: #f9fafb;
+}
+
+body.dark-mode .open-risk-banner {
+    border-bottom-color: #4b5563;
+}
+
+body.dark-mode .open-risk-banner.risk-low {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+body.dark-mode .open-risk-banner.risk-medium {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+body.dark-mode .open-risk-banner.risk-high {
+    background: #7f1d1d;
+    color: #fecaca;
+}
+
+body.dark-mode .snapshots-filter-bar {
+    background: #374151;
+    border-bottom-color: #4b5563;
+}
+
+body.dark-mode .filter-btn {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #f9fafb;
+}
+
+body.dark-mode .filter-btn:hover {
+    background: #6b7280;
+}
+
+body.dark-mode .filter-btn.active {
+    background: #1CA1F2;
+    border-color: #1CA1F2;
+}
+
+body.dark-mode .snapshot-card {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+body.dark-mode .snapshot-card:hover {
+    border-color: #6b7280;
+}
+
+body.dark-mode .snapshot-ticker {
+    color: #60a5fa;
+}
+
+body.dark-mode .snapshot-label {
+    color: #9ca3af;
+}
+
+body.dark-mode .snapshot-value {
+    color: #f9fafb;
+}
+
+body.dark-mode .snapshot-notes .snapshot-value {
+    color: #d1d5db;
+}
+
+body.dark-mode .status-open {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+body.dark-mode .status-trimmed {
+    background: #78350f;
+    color: #fef3c7;
+}
+
+body.dark-mode .status-closed {
+    background: #4b5563;
+    color: #d1d5db;
+}
+
+body.dark-mode .snapshot-action-row {
+    border-top-color: #4b5563;
+}
+
+body.dark-mode .snapshot-trimmed-info {
+    background: #78350f;
+    border-color: #92400e;
+}
+
+body.dark-mode .trim-summary-header {
+    color: #fef3c7;
+    border-bottom-color: #92400e;
+}
+
+body.dark-mode .trim-detail {
+    color: #fef3c7;
+}
+
+body.dark-mode .trim-exit-rule {
+    color: #d1d5db;
+}
+
+body.dark-mode .trim-summary {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+body.dark-mode .trim-summary p {
+    color: #e5e7eb;
+}
+
+body.dark-mode .trim-preview {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+body.dark-mode .trim-preview h4 {
+    color: #60a5fa;
+}
+
+body.dark-mode .trim-preview p {
+    color: #e5e7eb;
+}
+
+body.dark-mode .trim-preview.error {
+    background: #7f1d1d;
+    border-color: #dc2626;
+}
+
+body.dark-mode .trim-preview.error h4,
+body.dark-mode .trim-preview.error p {
+    color: #fecaca;
+}
+
+body.dark-mode .input-hint {
+    color: #9ca3af;
+}
+
+body.dark-mode .edit-group input,
+body.dark-mode .edit-group textarea,
+body.dark-mode .edit-group select {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+body.dark-mode .edit-group input:focus,
+body.dark-mode .edit-group textarea:focus {
+    border-color: #1CA1F2;
+    box-shadow: 0 0 0 3px rgba(28, 161, 242, 0.1);
+}
+
+body.dark-mode .edit-group label {
+    color: #f9fafb;
+}
+
+body.dark-mode .edit-actions {
+    border-top-color: #4b5563;
+}
+
+body.dark-mode .modal-close {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #f9fafb;
+}
+
+body.dark-mode .modal-close:hover {
+    background: #6b7280;
+}
+
 /* ==========================================================================
    LOGBOOK LITE STYLES
    ========================================================================== */
