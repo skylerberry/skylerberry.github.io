@@ -1082,27 +1082,27 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
 
     // Validation
     if (shares > remainingShares) {
+      preview.className = 'trim-preview error';
       preview.innerHTML = `
-        <div style="color: #dc2626;">
-          <h4>Error:</h4>
-          <p>Cannot sell more than ${remainingShares} remaining shares!</p>
-        </div>
+        <h4>Error:</h4>
+        <p>Cannot sell more than ${remainingShares} remaining shares!</p>
       `;
       confirmBtn.disabled = true;
       return;
     }
 
     if (shares <= 0 || price <= 0) {
+      preview.className = 'trim-preview error';
       preview.innerHTML = `
-        <div style="color: #dc2626;">
-          <h4>Error:</h4>
-          <p>Price and shares must be greater than 0</p>
-        </div>
+        <h4>Error:</h4>
+        <p>Price and shares must be greater than 0</p>
       `;
       confirmBtn.disabled = true;
       return;
     }
 
+    // Reset to success state
+    preview.className = 'trim-preview';
     confirmBtn.disabled = false;
 
     const willClose = newRemainingShares === 0;
