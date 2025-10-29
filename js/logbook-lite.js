@@ -1072,6 +1072,8 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
   const preview = trimModal.querySelector('#trim-preview');
   const confirmBtn = trimModal.querySelector('#confirm-trim');
 
+  let userHasInteracted = false;
+
   // Update preview
   const updatePreview = () => {
     const price = parseFloat(priceInput.value) || 0;
@@ -1092,12 +1094,23 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
     }
 
     if (shares <= 0 || price <= 0) {
-      preview.className = 'trim-preview error';
-      preview.innerHTML = `
-        <h4>Error:</h4>
-        <p>Price and shares must be greater than 0</p>
-      `;
-      confirmBtn.disabled = true;
+      // Only show error if user has interacted with inputs
+      if (userHasInteracted) {
+        preview.className = 'trim-preview error';
+        preview.innerHTML = `
+          <h4>Error:</h4>
+          <p>Price and shares must be greater than 0</p>
+        `;
+        confirmBtn.disabled = true;
+      } else {
+        // Show helpful message on initial load
+        preview.className = 'trim-preview';
+        preview.innerHTML = `
+          <h4>Ready to trim:</h4>
+          <p>Enter exit price and shares to see preview</p>
+        `;
+        confirmBtn.disabled = true;
+      }
       return;
     }
 
@@ -1116,8 +1129,14 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
     `;
   };
 
-  priceInput.addEventListener('input', updatePreview);
-  sharesInput.addEventListener('input', updatePreview);
+  priceInput.addEventListener('input', () => {
+    userHasInteracted = true;
+    updatePreview();
+  });
+  sharesInput.addEventListener('input', () => {
+    userHasInteracted = true;
+    updatePreview();
+  });
   updatePreview(); // Initial preview
 
   // Handle modal events
