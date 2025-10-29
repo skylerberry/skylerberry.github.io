@@ -639,15 +639,27 @@ function showJournalModal(snapshots, onUpdate) {
   });
 
   // Add event listeners
-  modal.querySelector('.modal-close').addEventListener('click', () => {
+  const closeJournalModal = () => {
     modal.remove();
-  });
+    document.removeEventListener('keydown', handleJournalEscape);
+  };
 
+  modal.querySelector('.modal-close').addEventListener('click', closeJournalModal);
+
+  // Allow closing by clicking outside (only for main journal modal)
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
-      modal.remove();
+      closeJournalModal();
     }
   });
+
+  // ESC key to close
+  const handleJournalEscape = (e) => {
+    if (e.key === 'Escape' && modal.isConnected) {
+      closeJournalModal();
+    }
+  };
+  document.addEventListener('keydown', handleJournalEscape);
 
   // Handle snapshot actions
   modal.addEventListener('click', (e) => {
@@ -660,7 +672,7 @@ function showJournalModal(snapshots, onUpdate) {
 
     if (target.classList.contains('snapshot-delete')) {
       const index = parseInt(target.getAttribute('data-index'));
-      deleteSnapshot(snapshots, index, onUpdate, modal);
+      deleteSnapshot(snapshots, index, onUpdate, modal, closeJournalModal);
     }
 
     if (target.classList.contains('snapshot-copy')) {
@@ -841,12 +853,21 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
   document.body.appendChild(editModal);
 
   // Handle edit modal events
-  editModal.querySelector('.modal-close').addEventListener('click', () => editModal.remove());
-  editModal.querySelector('#cancel-edit').addEventListener('click', () => editModal.remove());
-  
-  editModal.addEventListener('click', (e) => {
-    if (e.target === editModal) editModal.remove();
-  });
+  const closeEditModal = () => {
+    editModal.remove();
+    document.removeEventListener('keydown', handleEditEscape);
+  };
+
+  editModal.querySelector('.modal-close').addEventListener('click', closeEditModal);
+  editModal.querySelector('#cancel-edit').addEventListener('click', closeEditModal);
+
+  // ESC key to close (no click-outside to prevent accidental data loss)
+  const handleEditEscape = (e) => {
+    if (e.key === 'Escape' && editModal.isConnected) {
+      closeEditModal();
+    }
+  };
+  document.addEventListener('keydown', handleEditEscape);
 
   editModal.querySelector('#save-edit').addEventListener('click', () => {
     // Get the edited values
@@ -880,12 +901,12 @@ function editSnapshot(snapshots, index, onUpdate, modal) {
       snapshotCard.outerHTML = createSnapshotCard(updatedSnapshot, index);
     }
 
-    editModal.remove();
+    closeEditModal();
     toast('✅ Trade updated with recalculated values');
   });
 }
 
-function deleteSnapshot(snapshots, index, onUpdate, modal) {
+function deleteSnapshot(snapshots, index, onUpdate, modal, closeJournalModal) {
   const snapshot = snapshots[index];
   const ticker = snapshot.ticker || 'this snapshot';
   
@@ -909,7 +930,7 @@ function deleteSnapshot(snapshots, index, onUpdate, modal) {
 
         // If no trades left, close modal
         if (snapshots.length === 0) {
-          modal.remove();
+          closeJournalModal();
           toast(`🗑️ Deleted ${ticker} - journal is now empty`);
           return;
         }
@@ -952,7 +973,7 @@ function deleteSnapshot(snapshots, index, onUpdate, modal) {
 
       // If no trades left, close modal
       if (snapshots.length === 0) {
-        modal.remove();
+        closeJournalModal();
         toast(`🗑️ Deleted ${ticker} - journal is now empty`);
         return;
       }
@@ -1173,12 +1194,21 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
   updatePreview(); // Initial preview
 
   // Handle modal events
-  trimModal.querySelector('.modal-close').addEventListener('click', () => trimModal.remove());
-  trimModal.querySelector('#cancel-trim').addEventListener('click', () => trimModal.remove());
+  const closeTrimModal = () => {
+    trimModal.remove();
+    document.removeEventListener('keydown', handleTrimEscape);
+  };
 
-  trimModal.addEventListener('click', (e) => {
-    if (e.target === trimModal) trimModal.remove();
-  });
+  trimModal.querySelector('.modal-close').addEventListener('click', closeTrimModal);
+  trimModal.querySelector('#cancel-trim').addEventListener('click', closeTrimModal);
+
+  // ESC key to close (no click-outside to prevent accidental data loss)
+  const handleTrimEscape = (e) => {
+    if (e.key === 'Escape' && trimModal.isConnected) {
+      closeTrimModal();
+    }
+  };
+  document.addEventListener('keydown', handleTrimEscape);
 
   confirmBtn.addEventListener('click', () => {
     const price = parseFloat(priceInput.value) || 0;
@@ -1223,7 +1253,7 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
       snapshotCard.outerHTML = createSnapshotCard(snapshots[index], index);
     }
 
-    trimModal.remove();
+    closeTrimModal();
 
     if (willClose) {
       const totalProfit = newTrims.reduce((sum, t) => sum + t.profit, 0);
