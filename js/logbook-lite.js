@@ -1114,7 +1114,19 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
     const totalProfit = shares * profitPerShare;
     const newRemainingShares = remainingShares - shares;
 
-    // Validation
+    // Validation - only show errors if user has interacted
+    if (!userHasInteracted) {
+      // Initial state - show neutral/helpful preview
+      preview.className = 'trim-preview';
+      preview.innerHTML = `
+        <h4>Preview:</h4>
+        <p>Enter exit price${isFirstTrim ? '' : ' and adjust shares if needed'} to see profit calculation</p>
+      `;
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    // User has interacted - now validate and show errors if needed
     if (shares > remainingShares) {
       preview.className = 'trim-preview error';
       preview.innerHTML = `
@@ -1126,27 +1138,16 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
     }
 
     if (shares <= 0 || price <= 0) {
-      // Only show error if user has interacted with inputs
-      if (userHasInteracted) {
-        preview.className = 'trim-preview error';
-        preview.innerHTML = `
-          <h4>Error:</h4>
-          <p>Price and shares must be greater than 0</p>
-        `;
-        confirmBtn.disabled = true;
-      } else {
-        // Show helpful message on initial load
-        preview.className = 'trim-preview';
-        preview.innerHTML = `
-          <h4>Ready to trim:</h4>
-          <p>Enter exit price and shares to see preview</p>
-        `;
-        confirmBtn.disabled = true;
-      }
+      preview.className = 'trim-preview error';
+      preview.innerHTML = `
+        <h4>Error:</h4>
+        <p>Price and shares must be greater than 0</p>
+      `;
+      confirmBtn.disabled = true;
       return;
     }
 
-    // Reset to success state
+    // All valid - show success preview
     preview.className = 'trim-preview';
     confirmBtn.disabled = false;
 
