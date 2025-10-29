@@ -902,11 +902,18 @@ function deleteSnapshot(snapshots, index, onUpdate, modal) {
       // Remove from DOM after animation
       setTimeout(() => {
         snapshotCard.remove();
-        
+
         // Update the snapshots array
         snapshots.splice(index, 1);
         onUpdate(snapshots);
-        
+
+        // If no trades left, close modal
+        if (snapshots.length === 0) {
+          modal.remove();
+          toast(`🗑️ Deleted ${ticker} - journal is now empty`);
+          return;
+        }
+
         // Update remaining indices
         modal.querySelectorAll('.snapshot-card').forEach((card, newIndex) => {
           card.setAttribute('data-index', newIndex);
@@ -914,17 +921,42 @@ function deleteSnapshot(snapshots, index, onUpdate, modal) {
             action.setAttribute('data-index', newIndex);
           });
         });
-        
+
         // Update modal header count
         const header = modal.querySelector('.snapshots-modal-header h3');
         header.textContent = `📖 Trade Journal (${snapshots.length} ${snapshots.length === 1 ? 'trade' : 'trades'})`;
-        
+
+        // Update filter button counts
+        const statusCounts = snapshots.reduce((acc, s) => {
+          const status = s.status || 'open';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+
+        const openCount = statusCounts.open || 0;
+        const trimmedCount = statusCounts.trimmed || 0;
+        const closedCount = statusCounts.closed || 0;
+
+        const filterButtons = modal.querySelectorAll('.filter-btn');
+        filterButtons[0].textContent = `All (${snapshots.length})`;
+        filterButtons[1].textContent = `Open (${openCount})`;
+        filterButtons[2].textContent = `Trimmed (${trimmedCount})`;
+        filterButtons[3].textContent = `Closed (${closedCount})`;
+
         toast(`🗑️ Deleted ${ticker}`);
       }, 300); // Wait for animation to complete
     } else {
       // Fallback if card not found
       snapshots.splice(index, 1);
       onUpdate(snapshots);
+
+      // If no trades left, close modal
+      if (snapshots.length === 0) {
+        modal.remove();
+        toast(`🗑️ Deleted ${ticker} - journal is now empty`);
+        return;
+      }
+
       toast(`🗑️ Deleted ${ticker}`);
     }
   }
