@@ -145,7 +145,20 @@ export function initLogbookLite(appState, { autoSnapshotOnImport = true } = {}) 
   
   const updateCount = () => {
     const count = rows.length;
-    countEl.textContent = `${count} trade${count === 1 ? '' : 's'}`;
+
+    // Calculate total open risk
+    const openTrades = rows.filter(r => r.status === 'open' || r.status === 'trimmed');
+    const totalOpenRisk = openTrades.reduce((sum, trade) => {
+      return sum + (parseFloat(trade.risk_pct) || 0);
+    }, 0);
+
+    const openCount = openTrades.length;
+
+    if (openCount > 0) {
+      countEl.textContent = `${count} trade${count === 1 ? '' : 's'} • ${totalOpenRisk.toFixed(2)}% at risk (${openCount} open)`;
+    } else {
+      countEl.textContent = `${count} trade${count === 1 ? '' : 's'}`;
+    }
   };
   
   updateCount();
@@ -591,6 +604,32 @@ function showJournalModal(snapshots, onUpdate) {
   const trimmedCount = statusCounts.trimmed || 0;
   const closedCount = statusCounts.closed || 0;
 
+  // Calculate total open risk
+  const openTrades = snapshots.filter(s => (s.status === 'open' || s.status === 'trimmed'));
+  const totalOpenRisk = openTrades.reduce((sum, trade) => {
+    return sum + (parseFloat(trade.risk_pct) || 0);
+  }, 0);
+
+  // Determine risk level for styling
+  let riskClass = 'risk-low';
+  let riskIcon = '✅';
+  if (totalOpenRisk >= 3) {
+    riskClass = 'risk-high';
+    riskIcon = '⚠️';
+  } else if (totalOpenRisk >= 2) {
+    riskClass = 'risk-medium';
+    riskIcon = '⚠️';
+  }
+
+  // Create open risk banner HTML
+  const openRiskBanner = openTrades.length > 0 ? `
+    <div class="open-risk-banner ${riskClass}">
+      <span class="risk-icon">${riskIcon}</span>
+      <strong>OPEN RISK: ${totalOpenRisk.toFixed(2)}%</strong>
+      <span class="risk-detail">(${openTrades.length} open position${openTrades.length === 1 ? '' : 's'})</span>
+    </div>
+  ` : '';
+
   // Create modal
   const modal = document.createElement('div');
   modal.className = 'snapshots-modal';
@@ -600,6 +639,7 @@ function showJournalModal(snapshots, onUpdate) {
         <h3>📖 Trade Journal (${snapshots.length} ${snapshots.length === 1 ? 'trade' : 'trades'})</h3>
         <button class="modal-close" aria-label="Close">×</button>
       </div>
+      ${openRiskBanner}
       <div class="snapshots-filter-bar">
         <button class="filter-btn active" data-filter="all">All (${snapshots.length})</button>
         <button class="filter-btn" data-filter="open">Open (${openCount})</button>
@@ -700,6 +740,7 @@ function createSnapshotCard(snapshot, index) {
   const shares = formatNumber(snapshot.shares);
   const positionSize = formatNumber(snapshot.position_size);
   const target5R = formatNumber(snapshot.target_5R);
+  const riskPct = formatNumber(snapshot.risk_pct);
   const notes = snapshot.notes ? snapshot.notes.substring(0, 50) + (snapshot.notes.length > 50 ? '...' : '') : 'No notes';
 
   // Get status (default to 'open' for backward compatibility)
@@ -784,6 +825,8 @@ function createSnapshotCard(snapshot, index) {
         <div class="snapshot-row">
           <span class="snapshot-label">Position:</span>
           <span class="snapshot-value">$${positionSize}</span>
+          <span class="snapshot-label">Risk:</span>
+          <span class="snapshot-value snapshot-risk-highlight">${riskPct}%</span>
         </div>
         ${trimmedInfo}
         ${actionButtons ? `<div class="snapshot-action-row">${actionButtons}</div>` : ''}
@@ -1099,8 +1142,15 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
           <span class="input-hint">${isFirstTrim ? 'Default: 5R target price' : 'Enter your exit price'}</span>
         </div>
         <div class="edit-group">
-          <label>Shares to Sell:</label>
-          <input type="number" id="trim-shares" value="${defaultShares}" min="1" max="${remainingShares}" step="1" required>
+          <label>Trim Percentage:</label>
+          <div class="trim-percent-buttons">
+            <button type="button" class="trim-percent-btn" data-percent="10">10%</button>
+            <button type="button" class="trim-percent-btn" data-percent="20">20%</button>
+            <button type="button" class="trim-percent-btn" data-percent="25">25%</button>
+            <button type="button" class="trim-percent-btn" data-percent="50">50%</button>
+            <button type="button" class="trim-percent-btn" data-percent="100">All</button>
+          </div>
+          <input type="number" id="trim-shares" value="${defaultShares}" min="1" max="${remainingShares}" step="1" required placeholder="Or enter custom shares">
           <span class="input-hint">Max: ${remainingShares} shares remaining</span>
         </div>
         <div class="edit-group">
@@ -1124,6 +1174,22 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
   const dateInput = trimModal.querySelector('#trim-date');
   const preview = trimModal.querySelector('#trim-preview');
   const confirmBtn = trimModal.querySelector('#confirm-trim');
+
+  // Handle trim percent preset buttons
+  const trimPercentButtons = trimModal.querySelectorAll('.trim-percent-btn');
+  trimPercentButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const percent = parseFloat(btn.getAttribute('data-percent'));
+      const sharesToSell = Math.floor(remainingShares * (percent / 100));
+      sharesInput.value = sharesToSell;
+      userHasInteracted = true;
+      updatePreview();
+
+      // Highlight active button
+      trimPercentButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
 
   let userHasInteracted = false;
 
@@ -1189,6 +1255,8 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
   });
   sharesInput.addEventListener('input', () => {
     userHasInteracted = true;
+    // Clear button highlighting when user manually types
+    trimPercentButtons.forEach(b => b.classList.remove('active'));
     updatePreview();
   });
   updatePreview(); // Initial preview
