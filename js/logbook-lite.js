@@ -1291,6 +1291,25 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
     // Calculate profit for this trim
     const profitPerShare = price - entryPrice;
     const profit = shares * profitPerShare;
+    const newRemainingShares = remainingShares - shares;
+    const willClose = newRemainingShares === 0;
+
+    // Confirm before closing position
+    if (willClose) {
+      const totalProfit = [...trims, { profit }].reduce((sum, t) => sum + t.profit, 0);
+      const confirmed = confirm(
+        `⚠️ CLOSE POSITION\n\n` +
+        `This will close your entire ${ticker} position.\n\n` +
+        `Exit: ${shares} shares @ $${formatNumber(price)}\n` +
+        `This Trim P&L: $${formatNumber(profit)}\n` +
+        `Total Position P&L: $${formatNumber(totalProfit)}\n\n` +
+        `Continue?`
+      );
+
+      if (!confirmed) {
+        return; // User cancelled
+      }
+    }
 
     // Create new trim object
     const newTrim = {
@@ -1302,8 +1321,6 @@ function addTrimToSnapshot(snapshots, index, onUpdate, modal) {
 
     // Update snapshot
     const newTrims = [...trims, newTrim];
-    const newRemainingShares = remainingShares - shares;
-    const willClose = newRemainingShares === 0;
 
     snapshots[index] = {
       ...snapshot,
