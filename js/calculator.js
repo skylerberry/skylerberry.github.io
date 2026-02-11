@@ -24,6 +24,9 @@ export class Calculator {
         this.state = appState;
         this.elements = this.getElements();
         this.debouncedCalculate = debounce(() => this.calculate(), 250);
+        this.segments = [{ percent: 100, exitPrice: 0 }];
+        this.segmentsActive = false;
+        this.maxSegments = 5;
     }
 
     getElements() {
@@ -48,8 +51,20 @@ export class Calculator {
                 profitSection: document.getElementById('profitSection'),
                 profitPerShare: document.getElementById('profitPerShareValue'),
                 totalProfit: document.getElementById('totalProfitValue'),
+                accountGrowth: document.getElementById('accountGrowthValue'),
                 roi: document.getElementById('roiValue'),
                 riskReward: document.getElementById('riskRewardValue')
+            },
+            segments: {
+                section: document.getElementById('segmentedExitSection'),
+                toggle: document.getElementById('segmentToggle'),
+                toggleIcon: document.getElementById('segmentToggleIcon'),
+                content: document.getElementById('segmentContent'),
+                rows: document.getElementById('segmentRows'),
+                addBtn: document.getElementById('addSegmentBtn'),
+                validationFill: document.getElementById('segmentValidationFill'),
+                validationText: document.getElementById('segmentValidationText'),
+                results: document.getElementById('segmentResults')
             },
             errors: {
                 stopLoss: document.getElementById('stopLossError'),
@@ -81,7 +96,8 @@ export class Calculator {
     init() {
         this.setupInputHandlers();
         this.setupControlHandlers();
-        
+        this.setupSegmentHandlers();
+
         console.log('🧮 Calculator initialized');
     }
 
@@ -328,20 +344,42 @@ export class Calculator {
 
         if (hasValidTargetPrice) {
             const profitPerShare = inputs.targetPrice - inputs.entryPrice;
-            const totalProfit = profitPerShare * limitedShares;
+            let totalProfit = profitPerShare * limitedShares;
             const roi = calculateROI(totalProfit, limitedPositionSize);
             const riskReward = totalProfit / (limitedShares * riskPerShare);
 
+            // Check if segments are active and valid
+            let segmentedTotal = null;
+            if (this.segmentsActive) {
+                segmentedTotal = this.calculateSegments(limitedShares, inputs.entryPrice, riskPerShare);
+            }
+
+            const displayProfit = segmentedTotal !== null ? segmentedTotal : totalProfit;
+            const accountGrowth = inputs.accountSize > 0 ? (displayProfit / inputs.accountSize) * 100 : 0;
+
             Object.assign(results, {
                 profitPerShare: formatCurrency(profitPerShare),
-                totalProfit: formatCurrency(totalProfit),
-                roi: formatPercentage(roi),
+                totalProfit: formatCurrency(displayProfit),
+                roi: segmentedTotal !== null ? formatPercentage(calculateROI(displayProfit, limitedPositionSize)) : formatPercentage(roi),
                 riskReward: riskReward.toFixed(2)
             });
 
+            // Show account growth
+            toggleClass(this.elements.results.accountGrowth, 'hidden', false);
+            this.elements.results.accountGrowth.textContent = `(+${accountGrowth.toFixed(2)}% account growth)`;
+
             toggleClass(this.elements.results.profitSection, 'hidden', false);
+            toggleClass(this.elements.segments.section, 'hidden', false);
+
+            // Pre-fill first segment exit price with target if not yet set
+            if (this.segments[0].exitPrice === 0) {
+                this.segments[0].exitPrice = inputs.targetPrice;
+                this.renderSegmentRows();
+            }
         } else {
             toggleClass(this.elements.results.profitSection, 'hidden', true);
+            toggleClass(this.elements.segments.section, 'hidden', true);
+            toggleClass(this.elements.results.accountGrowth, 'hidden', true);
         }
 
         // Update state and UI
@@ -392,6 +430,8 @@ export class Calculator {
         this.state.updateCalculatorResults(emptyResults);
         this.renderResults(emptyResults);
         toggleClass(this.elements.results.profitSection, 'hidden', true);
+        toggleClass(this.elements.results.accountGrowth, 'hidden', true);
+        toggleClass(this.elements.segments.section, 'hidden', true);
         this.resetScenarios();
     }
 
@@ -494,6 +534,13 @@ export class Calculator {
         this.updateActiveRiskButton(DEFAULTS.RISK_PERCENTAGE);
         this.updateActiveMaxAccountButton(100);
 
+        // Reset segments
+        this.segments = [{ percent: 100, exitPrice: 0 }];
+        this.segmentsActive = false;
+        toggleClass(this.elements.segments.content, 'hidden', true);
+        toggleClass(this.elements.segments.toggleIcon, 'open', false);
+        toggleClass(this.elements.segments.results, 'hidden', true);
+
         // Reset results and clear errors
         this.resetResults();
         this.displayErrors([]);
@@ -551,6 +598,195 @@ export class Calculator {
         // Apply red styling to both cards only when actually limited
         toggleClass(percentOfAccountCard, 'limited', isActuallyLimited);
         toggleClass(positionSizeCard, 'limited', isActuallyLimited);
+    }
+
+    setupSegmentHandlers() {
+        // Toggle segmented exit visibility
+        this.elements.segments.toggle.addEventListener('click', () => {
+            const content = this.elements.segments.content;
+            const isHidden = content.classList.toggle('hidden');
+            toggleClass(this.elements.segments.toggleIcon, 'open', !isHidden);
+            this.segmentsActive = !isHidden;
+
+            if (!isHidden) {
+                this.renderSegmentRows();
+                this.validateSegments();
+            } else {
+                // When closing segments, recalculate with single target
+                toggleClass(this.elements.segments.results, 'hidden', true);
+                this.calculate();
+            }
+        });
+
+        // Add segment button
+        this.elements.segments.addBtn.addEventListener('click', () => {
+            if (this.segments.length >= this.maxSegments) return;
+            this.segments.push({ percent: 0, exitPrice: 0 });
+            this.renderSegmentRows();
+            this.validateSegments();
+        });
+    }
+
+    renderSegmentRows() {
+        const container = this.elements.segments.rows;
+        container.innerHTML = '';
+
+        this.segments.forEach((seg, i) => {
+            const row = document.createElement('div');
+            row.className = 'segment-row';
+
+            const label = document.createElement('span');
+            label.className = 'segment-row-label';
+            label.textContent = `${i + 1}`;
+
+            const pctGroup = document.createElement('div');
+            pctGroup.className = 'segment-input-group';
+            const pctInput = document.createElement('input');
+            pctInput.type = 'number';
+            pctInput.className = 'segment-input';
+            pctInput.min = '1';
+            pctInput.max = '100';
+            pctInput.step = '1';
+            pctInput.value = seg.percent || '';
+            pctInput.placeholder = '%';
+            pctInput.addEventListener('input', (e) => {
+                this.segments[i].percent = parseInt(e.target.value) || 0;
+                this.validateSegments();
+                this.calculate();
+            });
+            const pctSuffix = document.createElement('span');
+            pctSuffix.className = 'segment-input-suffix';
+            pctSuffix.textContent = '%';
+            pctGroup.appendChild(pctInput);
+            pctGroup.appendChild(pctSuffix);
+
+            const priceGroup = document.createElement('div');
+            priceGroup.className = 'segment-input-group';
+            const pricePrefix = document.createElement('span');
+            pricePrefix.className = 'segment-input-suffix';
+            pricePrefix.textContent = '$';
+            const priceInput = document.createElement('input');
+            priceInput.type = 'number';
+            priceInput.className = 'segment-input segment-price-input';
+            priceInput.min = '0';
+            priceInput.step = '0.01';
+            priceInput.value = seg.exitPrice || '';
+            priceInput.placeholder = 'Exit $';
+            priceInput.addEventListener('input', (e) => {
+                this.segments[i].exitPrice = parseFloat(e.target.value) || 0;
+                this.validateSegments();
+                this.calculate();
+            });
+            priceGroup.appendChild(pricePrefix);
+            priceGroup.appendChild(priceInput);
+
+            row.appendChild(label);
+            row.appendChild(pctGroup);
+            row.appendChild(priceGroup);
+
+            // Remove button (not on the only remaining row)
+            if (this.segments.length > 1) {
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'segment-remove-btn';
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', () => {
+                    this.segments.splice(i, 1);
+                    this.renderSegmentRows();
+                    this.validateSegments();
+                    this.calculate();
+                });
+                row.appendChild(removeBtn);
+            }
+
+            container.appendChild(row);
+        });
+
+        // Update add button state
+        this.elements.segments.addBtn.disabled = this.segments.length >= this.maxSegments;
+    }
+
+    validateSegments() {
+        const totalPct = this.segments.reduce((sum, s) => sum + s.percent, 0);
+        const isValid = totalPct === 100;
+        const fillPct = Math.min(totalPct, 100);
+
+        this.elements.segments.validationFill.style.width = `${fillPct}%`;
+        toggleClass(this.elements.segments.validationFill, 'valid', isValid);
+        this.elements.segments.validationText.textContent = `${totalPct}%`;
+        toggleClass(this.elements.segments.validationText, 'valid', isValid);
+        toggleClass(this.elements.segments.validationText, 'invalid', !isValid);
+
+        return isValid;
+    }
+
+    calculateSegments(totalShares, entryPrice, riskPerShare) {
+        if (!this.validateSegments()) {
+            toggleClass(this.elements.segments.results, 'hidden', true);
+            return null;
+        }
+
+        // Check all segments have valid exit prices
+        const allPricesValid = this.segments.every(s => s.exitPrice > 0);
+        if (!allPricesValid) {
+            toggleClass(this.elements.segments.results, 'hidden', true);
+            return null;
+        }
+
+        let combinedProfit = 0;
+        let allocatedShares = 0;
+        const segmentDetails = [];
+
+        this.segments.forEach((seg, i) => {
+            let sharesInSegment;
+            if (i === this.segments.length - 1) {
+                // Last segment gets remainder to avoid rounding gaps
+                sharesInSegment = totalShares - allocatedShares;
+            } else {
+                sharesInSegment = Math.floor(totalShares * seg.percent / 100);
+            }
+            allocatedShares += sharesInSegment;
+
+            const profit = sharesInSegment * (seg.exitPrice - entryPrice);
+            combinedProfit += profit;
+
+            segmentDetails.push({
+                index: i + 1,
+                percent: seg.percent,
+                shares: sharesInSegment,
+                exitPrice: seg.exitPrice,
+                profit
+            });
+        });
+
+        // Render segment results
+        this.renderSegmentResults(segmentDetails, combinedProfit);
+        return combinedProfit;
+    }
+
+    renderSegmentResults(details, combinedProfit) {
+        const container = this.elements.segments.results;
+        container.innerHTML = '';
+
+        details.forEach(d => {
+            const row = document.createElement('div');
+            row.className = 'segment-result-row';
+            row.innerHTML = `
+                <span class="segment-result-label">Seg ${d.index}: ${d.shares} shares @ ${formatCurrency(d.exitPrice)}</span>
+                <span class="segment-result-value">${formatCurrency(d.profit)}</span>
+            `;
+            container.appendChild(row);
+        });
+
+        const totalRow = document.createElement('div');
+        totalRow.className = 'segment-result-row segment-result-total';
+        totalRow.innerHTML = `
+            <span class="segment-result-label">Combined Total</span>
+            <span class="segment-result-value">${formatCurrency(combinedProfit)}</span>
+        `;
+        container.appendChild(totalRow);
+
+        toggleClass(container, 'hidden', false);
     }
 
     emitCalculationSnapshot(inputs, results, calculatedValues) {

@@ -1526,6 +1526,350 @@ body.dark-mode .add-profit-button {
     color: white;
 }
 
+/* Account Growth Text */
+.account-growth-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--profit-color);
+    margin-top: 2px;
+    opacity: 0.85;
+}
+
+.account-growth-text.hidden {
+    display: none;
+}
+
+/* ==========================================================================
+   SEGMENTED EXIT STYLES
+   ========================================================================== */
+
+.segment-section {
+    margin-top: var(--spacing-md);
+    border-top: 1px solid rgba(40, 167, 69, 0.3);
+    padding-top: var(--spacing-md);
+}
+
+.segment-section.hidden {
+    display: none;
+}
+
+.segment-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--profit-color);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    transition: opacity 0.2s;
+}
+
+.segment-toggle-btn:hover {
+    opacity: 0.8;
+}
+
+.segment-toggle-icon {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.segment-toggle-icon.open {
+    transform: rotate(90deg);
+}
+
+.segment-content {
+    margin-top: 12px;
+}
+
+.segment-content.hidden {
+    display: none;
+}
+
+.segment-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.segment-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.segment-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 18px;
+    text-align: center;
+}
+
+.segment-input {
+    width: 80px;
+    padding: 7px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+
+.segment-input:focus {
+    border-color: var(--profit-color);
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.segment-input-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.segment-input-suffix {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.segment-price-input {
+    width: 100px;
+}
+
+.segment-remove-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    line-height: 1;
+}
+
+.segment-remove-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.segment-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    gap: 12px;
+}
+
+.segment-add-btn {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: var(--profit-color);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.segment-add-btn:hover {
+    background: rgba(40, 167, 69, 0.15);
+    border-color: rgba(40, 167, 69, 0.4);
+}
+
+.segment-add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.segment-validation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 200px;
+}
+
+.segment-validation-bar {
+    flex: 1;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.segment-validation-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s, background-color 0.3s;
+    width: 0%;
+    background-color: #ef4444;
+}
+
+.segment-validation-fill.valid {
+    background-color: var(--profit-color);
+}
+
+.segment-validation-text {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 36px;
+    text-align: right;
+}
+
+.segment-validation-text.valid {
+    color: var(--profit-color);
+}
+
+.segment-validation-text.invalid {
+    color: #ef4444;
+}
+
+.segment-results {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(40, 167, 69, 0.06);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    border-radius: 8px;
+}
+
+.segment-results.hidden {
+    display: none;
+}
+
+.segment-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.segment-result-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.segment-result-value {
+    color: var(--profit-color);
+    font-weight: 600;
+}
+
+.segment-result-total {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(40, 167, 69, 0.3);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* Mobile segment styles */
+@media (max-width: 640px) {
+    .segment-row {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .segment-input {
+        width: 70px;
+        font-size: 13px;
+    }
+
+    .segment-price-input {
+        width: 90px;
+    }
+
+    .segment-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .segment-validation {
+        max-width: 100%;
+    }
+}
+
+/* Dark mode segment styles */
+body.dark-mode .segment-section {
+    border-top-color: rgba(40, 167, 69, 0.3);
+}
+
+body.dark-mode .segment-input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+body.dark-mode .segment-input:focus {
+    border-color: var(--profit-color);
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+body.dark-mode .segment-add-btn {
+    background: rgba(40, 167, 69, 0.15);
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+body.dark-mode .segment-validation-bar {
+    background: #374151;
+}
+
+body.dark-mode .segment-results {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.25);
+}
+
+body.dark-mode .segment-result-label {
+    color: #9ca3af;
+}
+
+body.dark-mode .segment-row-label {
+    color: #9ca3af;
+}
+
+/* Steel mode segment styles */
+body.steel-mode .segment-section {
+    border-top-color: rgba(40, 167, 69, 0.3);
+}
+
+body.steel-mode .segment-input {
+    background-color: #383838;
+    border-color: #4c4c4c;
+    color: #e5e7eb;
+}
+
+body.steel-mode .segment-input:focus {
+    border-color: var(--profit-color);
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+body.steel-mode .segment-add-btn {
+    background: rgba(40, 167, 69, 0.15);
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+body.steel-mode .segment-validation-bar {
+    background: #4c4c4c;
+}
+
+body.steel-mode .segment-results {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.25);
+}
+
+body.steel-mode .segment-result-label {
+    color: #9ca3af;
+}
+
+body.steel-mode .segment-row-label {
+    color: #9ca3af;
+}
+
 /* Risk Scenarios Styles */
 .scenarios-content {
     margin-top: 7px;
